@@ -7,7 +7,7 @@ import elementwise
 import torch
 import numpy as np
 
-class TestGradientComputation(unittest.TestCase):
+class TestNodes(unittest.TestCase):
     def setUp(self):
         self._rng = np.random.default_rng(10012002)
 
@@ -22,6 +22,8 @@ class TestGradientComputation(unittest.TestCase):
         A_node, B_node, C_node = [nodes.ConstantNode(arr) for arr in (A, B, C)]
         sum_node = nodes.ElementwiseNode(elementwise.ElementwiseAdd(3), [A_node, B_node, C_node])
         A_grad, B_grad, C_grad = sum_node.get_gradients_against([A_node, B_node, C_node], output_grad)
+
+        self.assertTrue(np.allclose(sum_node.get_value(), sum_torch.detach().numpy()))
 
         self.assertTrue(np.allclose(A_grad, A_torch.grad.detach().numpy()))
         self.assertTrue(np.allclose(B_grad, B_torch.grad.detach().numpy()))
@@ -61,6 +63,8 @@ class TestGradientComputation(unittest.TestCase):
         add2_node, = [nodes.ElementwiseNode(elementwise.ElementwiseAdd(2), [a, b]) for a, b in itertools.batched(mul2_node, 2)]
         grads = add2_node.get_gradients_against(arrs_node, output_grad)
 
+        self.assertTrue(np.allclose(add2_node.get_value(), add2_torch.detach().numpy()))
+
         for grad, ref_tensor in zip(grads, arrs_torch):
             self.assertTrue(np.allclose(grad, ref_tensor.grad.detach().numpy()))
 
@@ -75,6 +79,8 @@ class TestGradientComputation(unittest.TestCase):
         A_node, B_node = [nodes.ConstantNode(arr) for arr in (A, B)]
         out_node = nodes.TensorDotNode(A_node, B_node, 2)
         A_grad, B_grad = out_node.get_gradients_against([A_node, B_node], output_grad)
+
+        self.assertTrue(np.allclose(out_node.get_value(), out_torch.detach().numpy()))
 
         self.assertTrue(np.allclose(A_grad, A_torch.grad.detach().numpy()))
         self.assertTrue(np.allclose(B_grad, B_torch.grad.detach().numpy()))
@@ -96,6 +102,7 @@ class TestGradientComputation(unittest.TestCase):
         A_grad, = out_node.get_gradients_against([A_node], output_grad)
 
         self.assertTrue(np.allclose(out_node.get_value(), out_torch.detach().numpy()))
+
         self.assertTrue(np.allclose(A_grad, A_torch.grad.detach().numpy()))
 
     def test_extend(self) -> None:
@@ -110,5 +117,28 @@ class TestGradientComputation(unittest.TestCase):
         out_node = nodes.ExtendNode(A_node, (3, 3, 3))
         A_grad, = out_node.get_gradients_against([A_node], output_grad)
 
-        self.assertEqual(out_node.get_shape(), tuple(out_torch.shape))
+        self.assertTrue(np.allclose(out_node.get_value(), out_torch.detach().numpy()))
+
         self.assertTrue(np.allclose(A_grad, A_torch.grad.detach().numpy()))
+
+    def test_mse(self) -> None:
+        A, W, y = self._rng.random((10, 4)), self._rng.random((4, 1)), self._rng.random((10, 1))
+        
+        A_torch, W_torch, y_torch = [torch.tensor(arr, requires_grad=True) for arr in (A, W, y)]
+        tensordot_torch = torch.tensordot(A_torch, W_torch, 1)
+        mse_torch = torch.nn.functional.mse_loss(tensordot_torch, y_torch, reduction="mean")
+        mse_torch.backward()
+
+        A_node, W_node, y_node = [nodes.ConstantNode(arr) for arr in (A, W, y)]
+        tensordot_node = nodes.TensorDotNode(A_node, W_node, 1)
+        mse_node = nodes.mse_node(tensordot_node, y)
+        A_grad, W_grad = mse_node.get_gradients_against([A_node, W_node])
+
+        self.assertTrue(
+            np.allclose(mse_node.get_value(), mse_torch.detach().numpy().reshape(mse_node.get_shape())),
+            f"got {mse_node.get_value()}, should be {mse_torch}"
+        )
+        # ^ we care mainly about the value, so we ignore the shape
+
+        self.assertTrue(np.allclose(A_grad, A_torch.grad.detach().numpy()))
+        self.assertTrue(np.allclose(W_grad, W_torch.grad.detach().numpy()))

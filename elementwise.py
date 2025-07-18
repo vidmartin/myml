@@ -116,7 +116,7 @@ class ElementwiseUnary(ElementwiseFunction):
     @override
     @final
     def _evaluate_function(self, inputs):
-        return self._evaluate_unary_derivative(inputs[0])
+        return self._evaluate_unary_function(inputs[0])
     @override
     @final
     def _evaluate_partial_derivative(self, input_index, inputs):

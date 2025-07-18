@@ -77,8 +77,9 @@ class TensorNode(ABC):
         Returns "local gradients" of inputs given the gradient of the output.
         """
         shape = self.get_shape()
-        assert output_gradient is not None or len(shape) == 0, "`output_gradient` is optional only for nodes with scalar outputs"
-        output_gradient = np.array(1.0) if output_gradient is None else output_gradient
+        if output_gradient is None:
+            assert functools.reduce(lambda a, b: a * b, shape, 1) == 1, "`output_gradient` is optional only for nodes with scalar outputs"
+            output_gradient = np.ones(shape, dtype=np.float32)
         assert output_gradient.shape == self.get_shape(), "`output_gradient` must have the same shape as the output of the given node"
         return self._get_input_gradients(output_gradient)
     @abstractmethod
