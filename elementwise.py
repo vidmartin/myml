@@ -46,6 +46,8 @@ class CommonElementwiseOperations:
     @staticmethod
     def relu(): return _RELU
 
+# TODO: remove above ^^^
+
 class ElementwiseFunction(ABC):
     @abstractmethod
     def get_input_count(self):
@@ -58,7 +60,7 @@ class ElementwiseFunction(ABC):
     @final
     def evaluate_partial_derivative(self, input_index: int, inputs: list[np.ndarray]) -> np.ndarray:
         assert len(inputs) == self.get_input_count()
-        assert input_index > 0
+        assert input_index >= 0
         assert input_index < len(inputs)
         return self._evaluate_partial_derivative(input_index, inputs)
 
