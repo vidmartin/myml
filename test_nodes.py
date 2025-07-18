@@ -122,14 +122,14 @@ class TestNodes(unittest.TestCase):
         self.assertTrue(np.allclose(A_grad, A_torch.grad.detach().numpy()))
 
     def test_mse(self) -> None:
-        A, W, y = self._rng.random((10, 4)), self._rng.random((4, 1)), self._rng.random((10, 1))
+        A, W, y = self._rng.random((100, 4)), self._rng.random((4, 1)), self._rng.random((100, 1))
         
         A_torch, W_torch, y_torch = [torch.tensor(arr, requires_grad=True) for arr in (A, W, y)]
         tensordot_torch = torch.tensordot(A_torch, W_torch, 1)
         mse_torch = torch.nn.functional.mse_loss(tensordot_torch, y_torch, reduction="mean")
         mse_torch.backward()
 
-        A_node, W_node, y_node = [nodes.ConstantNode(arr) for arr in (A, W, y)]
+        A_node, W_node = [nodes.ConstantNode(arr) for arr in (A, W)]
         tensordot_node = nodes.TensorDotNode(A_node, W_node, 1)
         mse_node = nodes.mse_node(tensordot_node, y)
         A_grad, W_grad = mse_node.get_gradients_against([A_node, W_node])
