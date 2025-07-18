@@ -258,6 +258,29 @@ class ExtendNode(LazyDependentNode):
     def __repr__(self):
         return f"ExtendNode({self._deps[0]}, {self._prepend_dims})"
     
+class SumNode(LazyDependentNode):
+    def __init__(self, dep: TensorNode, n_axes_to_sum: int):
+        super().__init__([dep])
+        dep_sh = dep.get_shape()
+        assert n_axes_to_sum <= len(dep_sh)
+        self._shape = dep_sh[n_axes_to_sum:]
+        self._n_axes_to_sum = n_axes_to_sum
+    @override
+    def get_shape(self):
+        return self._shape
+    @override
+    def _get_value(self):
+        depval = self._deps[0].get_value()
+        return depval.sum(tuple(range(self._n_axes_to_sum)))
+    @override
+    def _get_input_gradients(self, output_gradient):
+        dep_sh = self._deps[0].get_shape()
+        indexer = (np.newaxis,) * self._n_axes_to_sum + (slice(0, None),) * len(self.get_shape())
+        return [output_gradient[indexer] + np.zeros(dep_sh)]
+    @override
+    def __repr__(self):
+        return f"SumNode({self._deps[0]}, {self._n_axes_to_sum})"
+    
 def softmax_node(dep: TensorNode):
     """Softmax over the last axis."""
     # TODO: change into node
