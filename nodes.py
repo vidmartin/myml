@@ -22,43 +22,12 @@ class TensorNode(ABC):
         raise NotImplementedError()
     
     @abstractmethod
-    @deprecated("deprecated - very inefficient")
-    def get_derivatives(self) -> list[np.ndarray]:
-        """
-        Each item in the resulting list corredponds to one of the direct dependencies, in the same order as given by self.get_direct_dependencies().
-
-        Denote the result of this node C and consider a dependency A. Denote the item corresponding to A in the resulting list as D.
-
-        Then, if `C` is of shape `(n_1, ..., n_N)` and A is of shape `(m_1, ..., m_M)`, `D` will be of shape `(n_1, ..., n_N, m_1, ..., m_M)` and
-        it will hold that `D_{i_1,...,i_N,j_1,...,j_M} = ∂C_{i_1,...,i_N} / ∂A_{j_1,...,j_M}`.
-
-        This is a generalization of the Jacobian matrix for functions of multi-dimensional arrays. However it turns out that the result is very sparse
-        (contains a lot of zeros) which makes gradient computation using this very inefficient.
-        """
-        raise NotImplementedError()
-    
-    @abstractmethod
     def get_leaf_dependencies(self) -> set[ConstantNode]:
         raise NotImplementedError()
     
     @abstractmethod
     def __repr__(self) -> str:
         raise NotImplementedError()
-    
-    @deprecated("inefficient calculation using the deprecated self.get_derivatives()")
-    def get_gradients_against_old(self, leaves: list[ConstantNode]) -> list[np.ndarray]:
-        leaf_deps = self.get_leaf_dependencies()
-        leaf_dep_indices = [i for i, leaf in enumerate(leaves) if leaf in leaf_deps]
-        gradients = [np.zeros(self.get_shape() + leaf.get_shape()) for leaf in leaves]
-        leaves_of_interest = [leaves[i] for i in leaf_dep_indices]
-        for dep, der in zip(self.get_direct_dependencies(), self.get_derivatives()):
-            temp_gradients = dep.get_gradients_against_old(leaves_of_interest)
-            for i, temp_grad in zip(leaf_dep_indices, temp_gradients):
-                if leaves[i] is dep:
-                    gradients[i] += der
-                else:
-                    gradients[i] += np.tensordot(der, temp_grad, len(dep.get_shape()))
-        return gradients
     
     def get_gradients_against(self, leaves: list[ConstantNode], output_gradient: np.ndarray | None = None):
         results = [np.zeros(leaf.get_shape()) for leaf in leaves]
@@ -103,9 +72,6 @@ class ConstantNode(TensorNode):
     def get_direct_dependencies(self):
         return self._deps
     @override
-    def get_derivatives(self):
-        return self._ders
-    @override
     def get_leaf_dependencies(self):
         return { self }
     @override
@@ -144,16 +110,6 @@ class LazyDependentNode(TensorNode):
     
     @override
     @final
-    def get_derivatives(self):
-        if self._ders is None:
-            self._ders = self._get_derivatives()
-        return self._ders
-    @abstractmethod
-    def _get_derivatives(self) -> list[np.ndarray]:
-        raise NotImplementedError()
-    
-    @override
-    @final
     def get_direct_dependencies(self):
         return self._deps
     @override
@@ -186,9 +142,6 @@ class ElementwiseNode(LazyDependentNode):
         return self._function.evaluate_function([
             dep.get_value() for dep in self.get_direct_dependencies()
         ])
-    @override
-    def _get_derivatives(self):
-        raise NotImplementedError()
     @override
     def _get_input_gradients(self, output_gradient: np.ndarray):
         deps = self.get_direct_dependencies()
@@ -230,61 +183,6 @@ class TensorDotNode(LazyDependentNode):
         lhs_v = self._lhs.get_value()
         rhs_v = self._rhs.get_value()
         return np.tensordot(lhs_v, rhs_v, self._n_axes_to_contract)
-    @override
-    def _get_derivatives(self):
-        shape = self.get_shape()
-        lhs_sh, rhs_sh = self._lhs.get_shape(), self._rhs.get_shape()
-        n_lhs_free_axes, n_rhs_free_axes = \
-            len(lhs_sh) - self._n_axes_to_contract, \
-            len(rhs_sh) - self._n_axes_to_contract
-        indices_lhs = np.indices(shape + lhs_sh)
-        indices_rhs = np.indices(shape + rhs_sh)
-
-        rhs_v = self._rhs.get_value()
-        rhs_v_transposed = rhs_v.transpose(
-            tuple(range(self._n_axes_to_contract, len(rhs_sh))) + \
-            tuple(range(self._n_axes_to_contract))
-        )
-        rhs_v_indexer = \
-            (np.newaxis,) * n_lhs_free_axes + \
-            (slice(0, None),) * n_rhs_free_axes + \
-            (np.newaxis,) * n_lhs_free_axes + \
-            (slice(0, None),) * self._n_axes_to_contract
-        rhs_v_interleaved = rhs_v_transposed[rhs_v_indexer]
-
-        lhs_v = self._lhs.get_value()
-        lhs_v_indexer = \
-            (slice(0, None),) * n_lhs_free_axes + \
-            (np.newaxis,) * n_rhs_free_axes + \
-            (slice(0, None),) * self._n_axes_to_contract + \
-            (np.newaxis,) * n_rhs_free_axes
-        lhs_v_interleaved = lhs_v[lhs_v_indexer]
-
-        return [
-            # derivative with respect to lhs contains elements from rhs:
-            rhs_v_interleaved * (
-                functools.reduce(
-                    lambda a, b: a & b,
-                    [
-                        indices_lhs[i] == indices_lhs[i + len(shape)]
-                        for i in range(n_lhs_free_axes)
-                    ],
-                    np.ones((), dtype=bool)
-                ).astype(np.float32)
-            ),
-
-            # derivative with respect to rhs contains elements from lhs:
-            lhs_v_interleaved * (
-                functools.reduce(
-                    lambda a, b: a & b,
-                    [
-                        indices_rhs[n_lhs_free_axes + i] == indices_rhs[len(shape) + self._n_axes_to_contract + i]
-                        for i in range(n_rhs_free_axes)
-                    ],
-                    np.ones((), dtype=bool)
-                ).astype(np.float32)
-            )
-        ]
     
     @override
     def _get_input_gradients(self, output_gradient):
@@ -334,20 +232,6 @@ class TransposeNode(LazyDependentNode):
     def _get_value(self):
         return self._deps[0].get_value().transpose(self._permutation)
     @override
-    def _get_derivatives(self):
-        sh = self.get_shape()
-        dep_sh = self._deps[0].get_shape()
-        indices = np.indices(sh + dep_sh)
-        der = functools.reduce(
-            lambda a, b: a & b,
-            [
-                indices[self._inverse_permutation[i]] == indices[len(sh) + i]
-                for i in range(len(sh))
-            ],
-            np.ones((), dtype=bool)
-        )
-        return [der]
-    @override
     def _get_input_gradients(self, output_gradient):
         return [output_gradient.transpose(self._inverse_permutation)]
     @override
@@ -368,19 +252,6 @@ class ExtendNode(LazyDependentNode):
         dummy = np.zeros(self._prepend_dims + (1,) * len(depval.shape))
         return depval[indexer] + dummy
     @override
-    def _get_derivatives(self):
-        dep_shape = self._deps[0].get_shape()
-        indices = np.indices(self._prepend_dims + 2 * dep_shape)
-        der = functools.reduce(
-            lambda a, b: a & b,
-            [
-                indices[len(self._prepend_dims) + i] == indices[len(self._prepend_dims) + len(dep_shape) + i]
-                for i in range(len(dep_shape))
-            ],
-            np.ones((), dtype=bool)
-        ).astype(np.float32)
-        return [der]
-    @override
     def _get_input_gradients(self, output_gradient):
         return [np.sum(output_gradient, tuple(range(len(self._prepend_dims))))]
     @override
@@ -389,19 +260,14 @@ class ExtendNode(LazyDependentNode):
     
 def softmax_node(dep: TensorNode):
     """Softmax over the last axis."""
-    # TODO: change into node (problem: _get_derivatives implementation)
+    # TODO: change into node
 
     dep_sh = dep.get_shape()
     exp = ElementwiseNode(elementwise.ElementwiseExp(), [dep])
-    # print(f"exp shape: {exp.get_shape()}")
     rowsum = TensorDotNode(exp, ConstantNode(np.ones(dep_sh[-1])), 1)
-    # print(f"rowsum shape: {rowsum.get_shape()}")
     rowsum_expanded = TransposeNode(ExtendNode(rowsum, (dep_sh[-1],)), tuple(range(len(dep_sh)))[1:] + (0,))
-    # print(f"rowsum_expanded shape: {rowsum_expanded.get_shape()}")
     rowsum_expanded_inverted = ElementwiseNode(elementwise.ElementwisePow(-1), [rowsum_expanded])
-    # print(f"rowsum_expanded_inverted shape: {rowsum_expanded_inverted.get_shape()}")
     softmaxed = ElementwiseNode(elementwise.ElementwiseMul(2), [exp, rowsum_expanded_inverted])
-    # print(f"softmaxed shape: {softmaxed.get_shape()}")
     return softmaxed
 
 def cross_entropy_node(dep: TensorNode, target_distributions: np.ndarray):
