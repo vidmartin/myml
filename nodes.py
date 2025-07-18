@@ -551,7 +551,7 @@ class TransposeNode(LazyDependentNode):
         return [der]
     @override
     def _get_input_gradients(self, output_gradient):
-        return output_gradient.transpose(self._inverse_permutation)
+        return [output_gradient.transpose(self._inverse_permutation)]
     @override
     def __repr__(self):
         return f"TransposeNode({self._deps[0]}, {self._permutation})"
@@ -584,7 +584,7 @@ class ExtendNode(LazyDependentNode):
         return [der]
     @override
     def _get_input_gradients(self, output_gradient):
-        return np.sum(output_gradient, tuple(range(len(self._prepend_dims))))
+        return [np.sum(output_gradient, tuple(range(len(self._prepend_dims))))]
     @override
     def __repr__(self):
         return f"ExtendNode({self._deps[0]}, {self._prepend_dims})"
