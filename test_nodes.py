@@ -158,3 +158,25 @@ class TestNodes(unittest.TestCase):
 
         self.assertTrue(np.allclose(A_grad, A_torch.grad.detach().numpy()))
         self.assertTrue(np.allclose(W_grad, W_torch.grad.detach().numpy()))
+
+    def test_mse_wrapped(self) -> None:
+        A, W, y = self._rng.random((100, 4)), self._rng.random((4, 1)), self._rng.random((100, 1))
+        
+        A_torch, W_torch, y_torch = [torch.tensor(arr, requires_grad=True) for arr in (A, W, y)]
+        tensordot_torch = torch.tensordot(A_torch, W_torch, 1)
+        mse_torch = torch.nn.functional.mse_loss(tensordot_torch, y_torch, reduction="mean")
+        mse_torch.backward()
+
+        A_node, W_node = [nodes.ConstantNode(arr) for arr in (A, W)]
+        tensordot_node = nodes.TensorDotNode(A_node, W_node, 1)
+        wrapped_mse_node = nodes.WrappingNode([tensordot_node], lambda nodes_: nodes.mse_node(nodes_[0], y))
+        A_grad, W_grad = wrapped_mse_node.get_gradients_against([A_node, W_node])
+        print(wrapped_mse_node)
+        self.assertTrue(
+            np.allclose(wrapped_mse_node.get_value(), mse_torch.detach().numpy().reshape(wrapped_mse_node.get_shape())),
+            f"got {wrapped_mse_node.get_value()}, should be {mse_torch}"
+        )
+        # ^ we care mainly about the value, so we ignore the shape
+
+        self.assertTrue(np.allclose(A_grad, A_torch.grad.detach().numpy()))
+        self.assertTrue(np.allclose(W_grad, W_torch.grad.detach().numpy()))
