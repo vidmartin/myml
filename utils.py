@@ -11,3 +11,9 @@ def one_hot_encode(arr: np.ndarray, n_classes: int):
     ret[indexer] = 1.0
 
     return ret
+
+def log_sum_exp(arr: np.ndarray):
+    """Perform LogSumExp along the last dimension."""
+    maxima = arr.max(-1)
+    exps: np.ndarray = np.exp(arr - maxima[...,np.newaxis])
+    return maxima + np.log(exps.sum(-1))
