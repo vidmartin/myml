@@ -17,3 +17,7 @@ def log_sum_exp(arr: np.ndarray):
     maxima = arr.max(-1)
     exps: np.ndarray = np.exp(arr - maxima[...,np.newaxis])
     return maxima + np.log(exps.sum(-1))
+
+def softmax(arr: np.ndarray):
+    """Perform softmax along the last dimension."""
+    return np.exp(arr - log_sum_exp(arr)[...,np.newaxis])

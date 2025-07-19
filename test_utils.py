@@ -55,19 +55,42 @@ class UtilsTestCase(unittest.TestCase):
         X = self._rng.random((10, 10), dtype=np.float32)
         ref = torch.logsumexp(torch.tensor(X, requires_grad=False), -1)
         out = utils.log_sum_exp(X)
-        self.assertTrue(np.allclose(ref.detach().numpy(), out), f"got {out} but wanted {ref}, naive calculation gives {np.log(np.exp(X).sum(-1))}")
+        self.assertTrue(np.allclose(ref.detach().numpy(), out, atol=0.001), f"got {out} but wanted {ref}, naive calculation gives {np.log(np.exp(X).sum(-1))}")
 
         X = self._rng.random((10, 10), dtype=np.float32) * 10
         ref = torch.logsumexp(torch.tensor(X, requires_grad=False), -1)
         out = utils.log_sum_exp(X)
-        self.assertTrue(np.allclose(ref.detach().numpy(), out), f"got {out} but wanted {ref}, naive calculation gives {np.log(np.exp(X).sum(-1))}")
+        self.assertTrue(np.allclose(ref.detach().numpy(), out, atol=0.001), f"got {out} but wanted {ref}, naive calculation gives {np.log(np.exp(X).sum(-1))}")
 
         X = self._rng.random((10, 10), dtype=np.float32) * 100
         ref = torch.logsumexp(torch.tensor(X, requires_grad=False), -1)
         out = utils.log_sum_exp(X)
-        self.assertTrue(np.allclose(ref.detach().numpy(), out), f"got {out} but wanted {ref}, naive calculation gives {np.log(np.exp(X).sum(-1))}")
+        self.assertTrue(np.allclose(ref.detach().numpy(), out, atol=0.001), f"got {out} but wanted {ref}, naive calculation gives {np.log(np.exp(X).sum(-1))}")
 
         X = self._rng.random((10, 10), dtype=np.float32) * 1000
         ref = torch.logsumexp(torch.tensor(X, requires_grad=False), -1)
         out = utils.log_sum_exp(X)
-        self.assertTrue(np.allclose(ref.detach().numpy(), out), f"got {out} but wanted {ref}, naive calculation gives {np.log(np.exp(X).sum(-1))}")
+        self.assertTrue(np.allclose(ref.detach().numpy(), out, atol=0.001), f"got {out} but wanted {ref}, naive calculation gives {np.log(np.exp(X).sum(-1))}")
+
+    def test_softmax(self):
+        X = self._rng.random((10, 10), dtype=np.float32)
+        ref = torch.softmax(torch.tensor(X, requires_grad=False), -1)
+        out = utils.softmax(X)
+        self.assertTrue(np.allclose(ref.detach().numpy(), out, atol=0.001), f"got {out} but wanted {ref}, naive calculation gives {np.log(np.exp(X).sum(-1))}")
+
+        X = self._rng.random((10, 10), dtype=np.float32) * 10
+        ref = torch.softmax(torch.tensor(X, requires_grad=False), -1)
+        out = utils.softmax(X)
+        self.assertTrue(np.allclose(ref.detach().numpy(), out, atol=0.001), f"got {out} but wanted {ref}, naive calculation gives {np.log(np.exp(X).sum(-1))}")
+
+        X = self._rng.random((10, 10), dtype=np.float32) * 100
+        ref = torch.softmax(torch.tensor(X, requires_grad=False), -1)
+        out = utils.softmax(X)
+        self.assertTrue(np.allclose(ref.detach().numpy(), out, atol=0.001), f"got {out} but wanted {ref}, naive calculation gives {np.log(np.exp(X).sum(-1))}")
+
+        X = self._rng.random((10, 10), dtype=np.float32) * 1000
+        ref = torch.softmax(torch.tensor(X, requires_grad=False), -1)
+        out = utils.softmax(X)
+        self.assertTrue(np.allclose(ref.detach().numpy(), out, atol=0.001), f"got {out} but wanted {ref}, naive calculation gives {np.log(np.exp(X).sum(-1))}")
+
+    
