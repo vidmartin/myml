@@ -217,6 +217,7 @@ class TensorDotNode(LazyDependentNode):
 
 class TransposeNode(LazyDependentNode):
     def __init__(self, dep: TensorNode, permutation: tuple[int, ...]):
+        # TODO: use Permutation class instead of tuple
         dep_sh = dep.get_shape()
         assert len(permutation) == len(dep_sh)
         super().__init__([dep])
@@ -354,6 +355,26 @@ class WrappingNode(LazyDependentNode):
             return f"WrappingNode({self._deps}, <lambda>) {{ unitialized }}"
         return f"WrappingNode({self._deps}, <lambda>) {{ {self._wrapped} }}"
     
+class CrossEntropyLogits(WrappingNode):
+    """
+    Calculate cross entropy loss along the last dimension, where `yhat` are predicted *logits* and `y` are the target probabilities.
+
+    Use together with `TransposeNode` to perform CrossEntropyLogits along any dimension.
+    """
+    def __init__(self, yhat: TensorNode, y: TensorNode):
+        assert yhat.get_shape() == y.get_shape()
+        self._yhat = yhat
+        self._y = y
+        self._shape = yhat.get_shape()[:-1]
+
+        def construct(nodes: list[ConstantNode]):
+            raise NotImplementedError() # TODO
+
+        super().__init__([yhat, y], construct)
+    @override
+    def __repr__(self):
+        return f"CrossEntropyLogits({self._yhat}, {self._y})"
+    
 def softmax_node(dep: TensorNode):
     """Softmax over the last axis."""
     # TODO: change into node
@@ -373,12 +394,13 @@ def avg_node(dep: TensorNode):
         [sum_nd]
     )
 
-def cross_entropy_node(dep: TensorNode, target_distributions: np.ndarray):
+def cross_entropy_logits_node(dep: TensorNode, target_distributions: np.ndarray):
     """Cross entropy over the last axis."""
     # TODO: take logits instead of probas as input, use log-sum-exp trick
     assert dep.get_shape() == target_distributions.shape
     shape = dep.get_shape()
     target_distributions_node = ConstantNode(target_distributions)
+
     mul_node = ElementwiseNode(elementwise.ElementwiseCrossLog(), [target_distributions_node, dep])
     rowsum = TensorDotNode(mul_node, ConstantNode(np.ones(shape[-1])), 1)
     neg_node = ElementwiseNode(elementwise.ElementwiseScale(-1.0), [rowsum])
