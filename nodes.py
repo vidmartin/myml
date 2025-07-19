@@ -334,6 +334,13 @@ def softmax_node(dep: TensorNode):
     softmaxed = ElementwiseNode(elementwise.ElementwiseMul(2), [exp, rowsum_expanded_inverted])
     return softmaxed
 
+def avg_node(dep: TensorNode):
+    sum_nd = SumNode(dep, 1)
+    return ElementwiseNode(
+        elementwise.ElementwiseScale(1.0 / dep.get_shape()[0]),
+        [sum_nd]
+    )
+
 def cross_entropy_node(dep: TensorNode, target_distributions: np.ndarray):
     """Cross entropy over the last axis."""
     # TODO: take logits instead of probas as input, use log-sum-exp trick
@@ -343,20 +350,10 @@ def cross_entropy_node(dep: TensorNode, target_distributions: np.ndarray):
     mul_node = ElementwiseNode(elementwise.ElementwiseCrossLog(), [target_distributions_node, dep])
     rowsum = TensorDotNode(mul_node, ConstantNode(np.ones(shape[-1])), 1)
     neg_node = ElementwiseNode(elementwise.ElementwiseScale(-1.0), [rowsum])
-    return neg_node
-
-def sum_node(dep: TensorNode, axis: int):
-    dep_sh = dep.get_shape()
-    assert axis == 0, f"this provisional implementation can only sum over the 0th axis"
-    ones = ConstantNode(np.ones(dep_sh[axis]))
-    return TensorDotNode(ones, dep, 1)
-
-def avg_node(dep: TensorNode, axis: int):
-    sum_nd = sum_node(dep, axis)
-    return ElementwiseNode(elementwise.ElementwiseScale(1.0 / dep.get_shape()[axis]), [sum_nd])
+    return avg_node(neg_node)
 
 def mse_node(dep: TensorNode, target: np.ndarray):
     neg_target_node = ConstantNode(-target)
     add_node = ElementwiseNode(elementwise.ElementwiseAdd(2), [dep, neg_target_node])
     sq_node = ElementwiseNode(elementwise.ElementwisePow(2), [add_node])
-    return avg_node(sq_node, 0)
+    return avg_node(sq_node)

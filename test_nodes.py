@@ -2,12 +2,11 @@
 from typing import *
 import itertools
 import unittest
-import nodes
-import elementwise
+import nodes, elementwise, utils
 import torch
 import numpy as np
 
-class TestNodes(unittest.TestCase):
+class NodesTestCase(unittest.TestCase):
     def setUp(self):
         self._rng = np.random.default_rng(10012002)
 
@@ -315,6 +314,148 @@ class TestNodes(unittest.TestCase):
                 ]
             )
         loss_node = nodes.mse_node(temp_node, y)
+        grads = loss_node.get_gradients_against(weights_nodes + biases_nodes)
+
+        self.assertTrue(np.allclose(loss_node.get_value(), loss_torch.detach().numpy()))
+
+        for torch_tensor, my_grad in zip(weights_torch + biases_torch, grads):
+            self.assertTrue(np.allclose(my_grad, torch_tensor.grad.detach().numpy()))
+
+    def test_fully_connected_classification(self) -> None:
+        X, y = self._rng.random((100, 25)), self._rng.integers(0, 5, (100,))
+        weights = [
+            self._rng.random((25, 10)),
+            self._rng.random((10, 10)),
+            self._rng.random((10, 10)),
+            self._rng.random((10, 10)),
+            self._rng.random((10, 5))
+        ]
+        biases = [
+            self._rng.random((10,)),
+            self._rng.random((10,)),
+            self._rng.random((10,)),
+            self._rng.random((10,)),
+            self._rng.random((5,))
+        ]
+        
+        X_torch = torch.tensor(X, requires_grad=False)
+        weights_torch = [
+            torch.tensor(arr, requires_grad=True)
+            for arr in weights
+        ]
+        biases_torch = [
+            torch.tensor(arr, requires_grad=True)
+            for arr in biases
+        ]
+        
+        temp_torch = X_torch
+        for W, b in zip(weights_torch, biases_torch):
+            temp_torch = torch.nn.functional.relu(temp_torch @ W + b)
+        loss_torch = torch.nn.functional.cross_entropy(temp_torch, torch.tensor(y), reduction="mean")
+        loss_torch.backward()
+
+        X_node = nodes.ConstantNode(X)
+        weights_nodes = [
+            nodes.ConstantNode(arr)
+            for arr in weights
+        ]
+        biases_nodes = [
+            nodes.ConstantNode(arr)
+            for arr in biases
+        ]
+
+        temp_node = X_node
+        for W, b in zip(weights_nodes, biases_nodes):
+            temp_node = nodes.ElementwiseNode(
+                elementwise.ElementwiseReLU(), [
+                    nodes.ElementwiseNode(
+                        elementwise.ElementwiseAdd(2), [
+                            nodes.TensorDotNode(temp_node, W, 1),
+                            nodes.ExtendNode(b, (X.shape[0],))
+                        ]
+                    )
+                ]
+            )
+        loss_node = nodes.cross_entropy_node(temp_node, utils.one_hot_encode(y, 5))
+        grads = loss_node.get_gradients_against(weights_nodes + biases_nodes)
+
+        self.assertTrue(np.allclose(loss_node.get_value(), loss_torch.detach().numpy()))
+
+        for torch_tensor, my_grad in zip(weights_torch + biases_torch, grads):
+            self.assertTrue(np.allclose(my_grad, torch_tensor.grad.detach().numpy()))
+
+    def test_fully_connected_classification_tied(self) -> None:
+        X, y = self._rng.random((100, 25)), self._rng.integers(0, 5, (100,))
+        weights = [
+            self._rng.random((25, 10)),
+            self._rng.random((10, 10)),
+            self._rng.random((10, 10)),
+            1,
+            self._rng.random((10, 5))
+        ]
+        biases = [
+            self._rng.random((10,)),
+            self._rng.random((10,)),
+            self._rng.random((10,)),
+            1,
+            self._rng.random((5,))
+        ]
+        
+        X_torch = torch.tensor(X, requires_grad=False)
+        weights_torch = [
+            torch.tensor(arr, requires_grad=True)
+            if not isinstance(arr, int) else None
+            for arr in weights
+        ]
+        biases_torch = [
+            torch.tensor(arr, requires_grad=True)
+            if not isinstance(arr, int) else None
+            for arr in biases
+        ]
+
+        for i, W in enumerate(weights):
+            if isinstance(W, int):
+                weights_torch[i] = weights_torch[W]
+        for i, W in enumerate(biases):
+            if isinstance(W, int):
+                biases_torch[i] = biases_torch[W]
+        
+        temp_torch = X_torch
+        for W, b in zip(weights_torch, biases_torch):
+            temp_torch = torch.nn.functional.relu(temp_torch @ W + b)
+        loss_torch = torch.nn.functional.cross_entropy(temp_torch, torch.tensor(y), reduction="mean")
+        loss_torch.backward()
+
+        X_node = nodes.ConstantNode(X)
+        weights_nodes = [
+            nodes.ConstantNode(arr)
+            for arr in weights
+        ]
+        biases_nodes = [
+            nodes.ConstantNode(arr)
+            for arr in biases
+        ]
+
+        for i, W in enumerate(weights):
+            if isinstance(W, int):
+                weights_nodes[i] = weights_nodes[W]
+        for i, W in enumerate(biases):
+            if isinstance(W, int):
+                biases_nodes[i] = biases_nodes[W]
+
+        temp_node = X_node
+        for W, b in zip(weights_nodes, biases_nodes):
+            temp_node = nodes.ElementwiseNode(
+                elementwise.ElementwiseReLU(), [
+                    nodes.ElementwiseNode(
+                        elementwise.ElementwiseAdd(2), [
+                            nodes.TensorDotNode(temp_node, W, 1),
+                            nodes.ExtendNode(b, (X.shape[0],))
+                        ]
+                    )
+                ]
+            )
+        loss_node = nodes.cross_entropy_node(temp_node, utils.one_hot_encode(y, 5))
         grads = loss_node.get_gradients_against(weights_nodes + biases_nodes)
 
         self.assertTrue(np.allclose(loss_node.get_value(), loss_torch.detach().numpy()))
