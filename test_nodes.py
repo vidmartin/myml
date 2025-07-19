@@ -179,6 +179,23 @@ class NodesTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(A_grad, A_torch.grad.detach().numpy()))
         self.assertTrue(np.allclose(W_grad, W_torch.grad.detach().numpy()))
 
+    def test_logsumexp(self) -> None:
+        output_grad = self._rng.random((20,))
+        for k in (1, 10, 100, 1000):
+            X = self._rng.random((20, 20)) * k
+
+            X_torch = torch.tensor(X, requires_grad=True)
+            logsumexp_torch = torch.logsumexp(X_torch, -1)
+            logsumexp_torch.backward(torch.tensor(output_grad, requires_grad=False))
+
+            X_node = nodes.ConstantNode(X)
+            logsumexp_node = nodes.LogSumExpNode(X_node)
+            grad, = logsumexp_node.get_gradients_against([X_node], output_grad)
+
+            self.assertTrue(np.allclose(logsumexp_node.get_value(), logsumexp_torch.detach().numpy(), atol=0.001), f"value doesn't match, k = {k}")
+
+            self.assertTrue(np.allclose(grad, X_torch.grad.detach().numpy(), atol=0.001), f"grad doesn't match, k = {k}, expected {X_torch.grad.detach().numpy()}, but got {grad}")
+
     def test_fully_connected_regression(self) -> None:
         X, y = self._rng.random((100, 25)), self._rng.random((100, 1))
         weights = [

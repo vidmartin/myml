@@ -7,6 +7,7 @@ import functools
 from warnings import deprecated
 import numpy as np
 import elementwise
+import utils
 
 class TensorNode(ABC):
     @abstractmethod
@@ -259,6 +260,11 @@ class ExtendNode(LazyDependentNode):
         return f"ExtendNode({self._deps[0]}, {self._prepend_dims})"
     
 class SumNode(LazyDependentNode):
+    """
+    Sum along the first `n_axes_to_sum` dimensions.
+    
+    Use together with `TransposeNode` to get sum along any dimension.
+    """
     def __init__(self, dep: TensorNode, n_axes_to_sum: int):
         super().__init__([dep])
         dep_sh = dep.get_shape()
@@ -280,6 +286,32 @@ class SumNode(LazyDependentNode):
     @override
     def __repr__(self):
         return f"SumNode({self._deps[0]}, {self._n_axes_to_sum})"
+    
+class LogSumExpNode(LazyDependentNode):
+    """
+    Perform the LogSumExp operation along the last dimension.
+
+    Use together with `TransposeNode` to perform LogSumExp along any dimension.
+    """
+    def __init__(self, dep: TensorNode):
+        super().__init__([dep])
+        dep_sh = dep.get_shape()
+        self._shape = dep_sh[:-1]
+    @override
+    def get_shape(self):
+        return self._shape
+    @override
+    def _get_value(self):
+        depval = self._deps[0].get_value()
+        return utils.log_sum_exp(depval)
+    @override
+    def _get_input_gradients(self, output_gradient):
+        depval = self._deps[0].get_value()
+        softmaxed = utils.softmax(depval)
+        return [output_gradient[...,np.newaxis] * softmaxed]
+    @override
+    def __repr__(self):
+        return f"LogSumExpNode({self._deps[0]})"
     
 class WrappingNode(LazyDependentNode):
     def __init__(self, deps: list[TensorNode], wrapper: Callable[[list[ConstantNode]], TensorNode]):
