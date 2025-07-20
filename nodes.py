@@ -7,6 +7,7 @@ import functools
 from warnings import deprecated
 import numpy as np
 import elementwise
+import permutation
 import utils
 
 class TensorNode(ABC):
@@ -216,26 +217,22 @@ class TensorDotNode(LazyDependentNode):
         return f"TensorDotNode({self._lhs}, {self._rhs}, {self._n_axes_to_contract})"
 
 class TransposeNode(LazyDependentNode):
-    def __init__(self, dep: TensorNode, permutation: tuple[int, ...]):
-        # TODO: use Permutation class instead of tuple
+    def __init__(self, dep: TensorNode, permutation: permutation.Permutation):
         dep_sh = dep.get_shape()
-        assert len(permutation) == len(dep_sh)
+        assert len(permutation.permutation) == len(dep_sh)
         super().__init__([dep])
         self._permutation = permutation
-        inverse_permutation = [0] * len(permutation)
-        for i in range(len(permutation)):
-            inverse_permutation[permutation[i]] = i
-        self._inverse_permutation = inverse_permutation
-        self._shape = tuple(dep_sh[permutation[i]] for i in range(len(dep_sh)))
+        self._inverse_permutation = permutation.inverse()
+        self._shape = tuple(dep_sh[permutation.permutation[i]] for i in range(len(dep_sh)))
     @override
     def get_shape(self):
         return self._shape
     @override
     def _get_value(self):
-        return self._deps[0].get_value().transpose(self._permutation)
+        return self._deps[0].get_value().transpose(self._permutation.permutation)
     @override
     def _get_input_gradients(self, output_gradient):
-        return [output_gradient.transpose(self._inverse_permutation)]
+        return [output_gradient.transpose(self._inverse_permutation.permutation)]
     @override
     def __repr__(self):
         return f"TransposeNode({self._deps[0]}, {self._permutation})"
@@ -314,6 +311,32 @@ class LogSumExpNode(LazyDependentNode):
     def __repr__(self):
         return f"LogSumExpNode({self._deps[0]})"
     
+    
+class SoftmaxNode(LazyDependentNode):
+    """
+    Perform softmax over the last dimension.
+
+    Use together with `TransposeNode` to perform softmax along any dimension.
+    """
+    def __init__(self, dep: TensorNode):
+        super().__init__([dep])
+    @override
+    def get_shape(self):
+        return self._deps[0].get_shape()
+    @override
+    def _get_value(self):
+        depval = self._deps[0].get_value()
+        return utils.softmax(depval)
+    @override
+    def _get_input_gradients(self, output_gradient):
+        depval = self._deps[0].get_value()
+        softmaxed = utils.softmax(depval)
+        temp = output_gradient * softmaxed
+        return [temp - softmaxed * temp.sum(-1)[...,np.newaxis]]
+    @override
+    def __repr__(self):
+        return f"SoftmaxNode({self._deps[0]})"
+    
 class WrappingNode(LazyDependentNode):
     def __init__(self, deps: list[TensorNode], wrapper: Callable[[list[ConstantNode]], TensorNode]):
         super().__init__(deps)
@@ -355,25 +378,41 @@ class WrappingNode(LazyDependentNode):
             return f"WrappingNode({self._deps}, <lambda>) {{ unitialized }}"
         return f"WrappingNode({self._deps}, <lambda>) {{ {self._wrapped} }}"
     
-class CrossEntropyLogits(WrappingNode):
+class CrossEntropyLogitsNode(WrappingNode):
     """
-    Calculate cross entropy loss along the last dimension, where `yhat` are predicted *logits* and `y` are the target probabilities.
+    Calculate cross entropy loss along the last dimension, where `yhat_logits` are predicted *logits* and `y_probas` are the target *probabilities*.
 
     Use together with `TransposeNode` to perform CrossEntropyLogits along any dimension.
     """
-    def __init__(self, yhat: TensorNode, y: TensorNode):
-        assert yhat.get_shape() == y.get_shape()
-        self._yhat = yhat
-        self._y = y
-        self._shape = yhat.get_shape()[:-1]
+    def __init__(self, yhat_logits: TensorNode, y_probas: TensorNode):
+        dep_shape = yhat_logits.get_shape()
+        assert dep_shape == y_probas.get_shape()
+        self._yhat = yhat_logits
+        self._y = y_probas
+        self._shape = dep_shape[:-1]
 
         def construct(nodes: list[ConstantNode]):
-            raise NotImplementedError() # TODO
+            yhat_node, y_node = nodes
 
-        super().__init__([yhat, y], construct)
+            mul_node = ElementwiseNode(elementwise.ElementwiseMul(2), [yhat_node, y_node])
+            sum_node = SumNode(TransposeNode(mul_node, permutation.Permutation.bring_to_front((-1,), len(dep_shape))), 1)
+            neg_sum_node = ElementwiseNode(elementwise.ElementwiseScale(-1.0), [sum_node])
+
+            logsumexp_node = LogSumExpNode(yhat_node)
+            sum_probas_node = SumNode(TransposeNode(y_node, permutation.Permutation.bring_to_front((-1,), len(dep_shape))), 1)
+            logsumexp_mul_node = ElementwiseNode(elementwise.ElementwiseMul(2), [logsumexp_node, sum_probas_node])
+            # ^ probabilities should add up to one (when used correctly), so the multiplication by sum_probas_node is redundant in forward pass
+            # however, it is important for computation of gradient against y_node
+            # however, in practical use cases one rarely needs to compute that gradient
+            # CONSIDER: make the sum_probas_node & logsumexp_mul_node optional
+
+            add_node = ElementwiseNode(elementwise.ElementwiseAdd(2), [neg_sum_node, logsumexp_mul_node])
+            return add_node
+
+        super().__init__([yhat_logits, y_probas], construct)
     @override
     def __repr__(self):
-        return f"CrossEntropyLogits({self._yhat}, {self._y})"
+        return f"CrossEntropyLogitsNode({self._yhat}, {self._y})"
     
 def softmax_node(dep: TensorNode):
     """Softmax over the last axis."""
