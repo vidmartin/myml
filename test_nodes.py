@@ -137,6 +137,22 @@ class NodesTestCase(unittest.TestCase):
         
         self.assertTrue(np.allclose(A_grad, A_torch.grad.detach().numpy()))
 
+    def test_avg(self) -> None:
+        A = self._rng.random((4, 4, 4, 4, 4))
+        output_grad = self._rng.random((4, 4))
+
+        A_torch = torch.tensor(A, requires_grad=True)
+        out_torch = A_torch.mean((0, 1, 2))
+        out_torch.backward(torch.tensor(output_grad))
+
+        A_node = nodes.ConstantNode(A)
+        out_node = nodes.AvgNode(A_node, 3)
+        A_grad, = out_node.get_gradients_against([A_node], output_grad)
+
+        self.assertTrue(np.allclose(out_node.get_value(), out_torch.detach().numpy()))
+        
+        self.assertTrue(np.allclose(A_grad, A_torch.grad.detach().numpy()))
+
     def test_mse(self) -> None:
         A, W, y = self._rng.random((100, 4)), self._rng.random((4, 1)), self._rng.random((100, 1))
         
@@ -374,144 +390,144 @@ class NodesTestCase(unittest.TestCase):
         for torch_tensor, my_grad in zip(weights_torch + biases_torch, grads):
             self.assertTrue(np.allclose(my_grad, torch_tensor.grad.detach().numpy()))
 
-    # def test_fully_connected_classification(self) -> None:
-    #     X, y = self._rng.random((100, 25)), self._rng.integers(0, 5, (100,))
-    #     weights = [
-    #         self._rng.random((25, 10)),
-    #         self._rng.random((10, 10)),
-    #         self._rng.random((10, 10)),
-    #         self._rng.random((10, 10)),
-    #         self._rng.random((10, 5))
-    #     ]
-    #     biases = [
-    #         self._rng.random((10,)),
-    #         self._rng.random((10,)),
-    #         self._rng.random((10,)),
-    #         self._rng.random((10,)),
-    #         self._rng.random((5,))
-    #     ]
+    def test_fully_connected_classification(self) -> None:
+        X, y = self._rng.random((100, 25)), self._rng.integers(0, 5, (100,))
+        weights = [
+            self._rng.random((25, 10)),
+            self._rng.random((10, 10)),
+            self._rng.random((10, 10)),
+            self._rng.random((10, 10)),
+            self._rng.random((10, 5))
+        ]
+        biases = [
+            self._rng.random((10,)),
+            self._rng.random((10,)),
+            self._rng.random((10,)),
+            self._rng.random((10,)),
+            self._rng.random((5,))
+        ]
         
-    #     X_torch = torch.tensor(X, requires_grad=False)
-    #     weights_torch = [
-    #         torch.tensor(arr, requires_grad=True)
-    #         for arr in weights
-    #     ]
-    #     biases_torch = [
-    #         torch.tensor(arr, requires_grad=True)
-    #         for arr in biases
-    #     ]
+        X_torch = torch.tensor(X, requires_grad=False)
+        weights_torch = [
+            torch.tensor(arr, requires_grad=True)
+            for arr in weights
+        ]
+        biases_torch = [
+            torch.tensor(arr, requires_grad=True)
+            for arr in biases
+        ]
         
-    #     temp_torch = X_torch
-    #     for W, b in zip(weights_torch, biases_torch):
-    #         temp_torch = torch.nn.functional.relu(temp_torch @ W + b)
-    #     loss_torch = torch.nn.functional.cross_entropy(temp_torch, torch.tensor(y), reduction="mean")
-    #     loss_torch.backward()
+        temp_torch = X_torch
+        for W, b in zip(weights_torch, biases_torch):
+            temp_torch = torch.nn.functional.relu(temp_torch @ W + b)
+        loss_torch = torch.nn.functional.cross_entropy(temp_torch, torch.tensor(y), reduction="mean")
+        loss_torch.backward()
 
-    #     X_node = nodes.ConstantNode(X)
-    #     weights_nodes = [
-    #         nodes.ConstantNode(arr)
-    #         for arr in weights
-    #     ]
-    #     biases_nodes = [
-    #         nodes.ConstantNode(arr)
-    #         for arr in biases
-    #     ]
+        X_node = nodes.ConstantNode(X)
+        weights_nodes = [
+            nodes.ConstantNode(arr)
+            for arr in weights
+        ]
+        biases_nodes = [
+            nodes.ConstantNode(arr)
+            for arr in biases
+        ]
 
-    #     temp_node = X_node
-    #     for W, b in zip(weights_nodes, biases_nodes):
-    #         temp_node = nodes.ElementwiseNode(
-    #             elementwise.ElementwiseReLU(), [
-    #                 nodes.ElementwiseNode(
-    #                     elementwise.ElementwiseAdd(2), [
-    #                         nodes.TensorDotNode(temp_node, W, 1),
-    #                         nodes.ExtendNode(b, (X.shape[0],))
-    #                     ]
-    #                 )
-    #             ]
-    #         )
-    #     loss_node = nodes.cross_entropy_node(temp_node, utils.one_hot_encode(y, 5))
-    #     grads = loss_node.get_gradients_against(weights_nodes + biases_nodes)
+        temp_node = X_node
+        for W, b in zip(weights_nodes, biases_nodes):
+            temp_node = nodes.ElementwiseNode(
+                elementwise.ElementwiseReLU(), [
+                    nodes.ElementwiseNode(
+                        elementwise.ElementwiseAdd(2), [
+                            nodes.TensorDotNode(temp_node, W, 1),
+                            nodes.ExtendNode(b, (X.shape[0],))
+                        ]
+                    )
+                ]
+            )
+        loss_node = nodes.CrossEntropyLogitsNode(temp_node, nodes.ConstantNode(utils.one_hot_encode(y, 5)))
+        grads = loss_node.get_gradients_against(weights_nodes + biases_nodes)
 
-    #     self.assertTrue(np.allclose(loss_node.get_value(), loss_torch.detach().numpy()))
+        self.assertTrue(np.allclose(loss_node.get_value(), loss_torch.detach().numpy()))
 
-    #     for torch_tensor, my_grad in zip(weights_torch + biases_torch, grads):
-    #         self.assertTrue(np.allclose(my_grad, torch_tensor.grad.detach().numpy()))
+        for torch_tensor, my_grad in zip(weights_torch + biases_torch, grads):
+            self.assertTrue(np.allclose(my_grad, torch_tensor.grad.detach().numpy()))
 
-    # def test_fully_connected_classification_tied(self) -> None:
-    #     X, y = self._rng.random((100, 25)), self._rng.integers(0, 5, (100,))
-    #     weights = [
-    #         self._rng.random((25, 10)),
-    #         self._rng.random((10, 10)),
-    #         self._rng.random((10, 10)),
-    #         1,
-    #         self._rng.random((10, 5))
-    #     ]
-    #     biases = [
-    #         self._rng.random((10,)),
-    #         self._rng.random((10,)),
-    #         self._rng.random((10,)),
-    #         1,
-    #         self._rng.random((5,))
-    #     ]
+    def test_fully_connected_classification_tied(self) -> None:
+        X, y = self._rng.random((100, 25)), self._rng.integers(0, 5, (100,))
+        weights = [
+            self._rng.random((25, 10)),
+            self._rng.random((10, 10)),
+            self._rng.random((10, 10)),
+            1,
+            self._rng.random((10, 5))
+        ]
+        biases = [
+            self._rng.random((10,)),
+            self._rng.random((10,)),
+            self._rng.random((10,)),
+            1,
+            self._rng.random((5,))
+        ]
         
-    #     X_torch = torch.tensor(X, requires_grad=False)
-    #     weights_torch = [
-    #         torch.tensor(arr, requires_grad=True)
-    #         if not isinstance(arr, int) else None
-    #         for arr in weights
-    #     ]
-    #     biases_torch = [
-    #         torch.tensor(arr, requires_grad=True)
-    #         if not isinstance(arr, int) else None
-    #         for arr in biases
-    #     ]
+        X_torch = torch.tensor(X, requires_grad=False)
+        weights_torch = [
+            torch.tensor(arr, requires_grad=True)
+            if not isinstance(arr, int) else None
+            for arr in weights
+        ]
+        biases_torch = [
+            torch.tensor(arr, requires_grad=True)
+            if not isinstance(arr, int) else None
+            for arr in biases
+        ]
 
-    #     for i, W in enumerate(weights):
-    #         if isinstance(W, int):
-    #             weights_torch[i] = weights_torch[W]
-    #     for i, W in enumerate(biases):
-    #         if isinstance(W, int):
-    #             biases_torch[i] = biases_torch[W]
+        for i, W in enumerate(weights):
+            if isinstance(W, int):
+                weights_torch[i] = weights_torch[W]
+        for i, W in enumerate(biases):
+            if isinstance(W, int):
+                biases_torch[i] = biases_torch[W]
         
-    #     temp_torch = X_torch
-    #     for W, b in zip(weights_torch, biases_torch):
-    #         temp_torch = torch.nn.functional.relu(temp_torch @ W + b)
-    #     loss_torch = torch.nn.functional.cross_entropy(temp_torch, torch.tensor(y), reduction="mean")
-    #     loss_torch.backward()
+        temp_torch = X_torch
+        for W, b in zip(weights_torch, biases_torch):
+            temp_torch = torch.nn.functional.relu(temp_torch @ W + b)
+        loss_torch = torch.nn.functional.cross_entropy(temp_torch, torch.tensor(y), reduction="mean")
+        loss_torch.backward()
 
-    #     X_node = nodes.ConstantNode(X)
-    #     weights_nodes = [
-    #         nodes.ConstantNode(arr)
-    #         for arr in weights
-    #     ]
-    #     biases_nodes = [
-    #         nodes.ConstantNode(arr)
-    #         for arr in biases
-    #     ]
+        X_node = nodes.ConstantNode(X)
+        weights_nodes = [
+            nodes.ConstantNode(arr)
+            for arr in weights
+        ]
+        biases_nodes = [
+            nodes.ConstantNode(arr)
+            for arr in biases
+        ]
 
-    #     for i, W in enumerate(weights):
-    #         if isinstance(W, int):
-    #             weights_nodes[i] = weights_nodes[W]
-    #     for i, W in enumerate(biases):
-    #         if isinstance(W, int):
-    #             biases_nodes[i] = biases_nodes[W]
+        for i, W in enumerate(weights):
+            if isinstance(W, int):
+                weights_nodes[i] = weights_nodes[W]
+        for i, W in enumerate(biases):
+            if isinstance(W, int):
+                biases_nodes[i] = biases_nodes[W]
 
-    #     temp_node = X_node
-    #     for W, b in zip(weights_nodes, biases_nodes):
-    #         temp_node = nodes.ElementwiseNode(
-    #             elementwise.ElementwiseReLU(), [
-    #                 nodes.ElementwiseNode(
-    #                     elementwise.ElementwiseAdd(2), [
-    #                         nodes.TensorDotNode(temp_node, W, 1),
-    #                         nodes.ExtendNode(b, (X.shape[0],))
-    #                     ]
-    #                 )
-    #             ]
-    #         )
-    #     loss_node = nodes.cross_entropy_node(temp_node, utils.one_hot_encode(y, 5))
-    #     grads = loss_node.get_gradients_against(weights_nodes + biases_nodes)
+        temp_node = X_node
+        for W, b in zip(weights_nodes, biases_nodes):
+            temp_node = nodes.ElementwiseNode(
+                elementwise.ElementwiseReLU(), [
+                    nodes.ElementwiseNode(
+                        elementwise.ElementwiseAdd(2), [
+                            nodes.TensorDotNode(temp_node, W, 1),
+                            nodes.ExtendNode(b, (X.shape[0],))
+                        ]
+                    )
+                ]
+            )
+        loss_node = nodes.CrossEntropyLogitsNode(temp_node, utils.one_hot_encode(y, 5))
+        grads = loss_node.get_gradients_against(weights_nodes + biases_nodes)
 
-    #     self.assertTrue(np.allclose(loss_node.get_value(), loss_torch.detach().numpy()))
+        self.assertTrue(np.allclose(loss_node.get_value(), loss_torch.detach().numpy()))
 
-    #     for torch_tensor, my_grad in zip(weights_torch + biases_torch, grads):
-    #         self.assertTrue(np.allclose(my_grad, torch_tensor.grad.detach().numpy()))
+        for torch_tensor, my_grad in zip(weights_torch + biases_torch, grads):
+            self.assertTrue(np.allclose(my_grad, torch_tensor.grad.detach().numpy()))
