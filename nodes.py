@@ -102,9 +102,6 @@ class LazyDependentNode(TensorNode):
     def get_value(self):
         if self._value is None:
             self._value = self._get_value()
-            if np.isnan(self._value).any():
-                # TODO: delete this and similar code
-                print(f"nan detected by {self}")
         return self._value
     @abstractmethod
     def _get_value(self) -> np.ndarray:
@@ -433,39 +430,3 @@ class CrossEntropyLogitsNode(WrappingNode):
     def __repr__(self):
         return f"CrossEntropyLogitsNode({self._yhat}, {self._y})"
     
-# def softmax_node(dep: TensorNode):
-#     """Softmax over the last axis."""
-#     # TODO: change into node
-
-#     dep_sh = dep.get_shape()
-#     exp = ElementwiseNode(elementwise.ElementwiseExp(), [dep])
-#     rowsum = TensorDotNode(exp, ConstantNode(np.ones(dep_sh[-1])), 1)
-#     rowsum_expanded = TransposeNode(ExtendNode(rowsum, (dep_sh[-1],)), tuple(range(len(dep_sh)))[1:] + (0,))
-#     rowsum_expanded_inverted = ElementwiseNode(elementwise.ElementwisePow(-1), [rowsum_expanded])
-#     softmaxed = ElementwiseNode(elementwise.ElementwiseMul(2), [exp, rowsum_expanded_inverted])
-#     return softmaxed
-
-# def avg_node(dep: TensorNode):
-#     sum_nd = SumNode(dep, 1)
-#     return ElementwiseNode(
-#         elementwise.ElementwiseScale(1.0 / dep.get_shape()[0]),
-#         [sum_nd]
-#     )
-
-# def cross_entropy_logits_node(dep: TensorNode, target_distributions: np.ndarray):
-#     """Cross entropy over the last axis."""
-#     # TODO: take logits instead of probas as input, use log-sum-exp trick
-#     assert dep.get_shape() == target_distributions.shape
-#     shape = dep.get_shape()
-#     target_distributions_node = ConstantNode(target_distributions)
-
-#     mul_node = ElementwiseNode(elementwise.ElementwiseCrossLog(), [target_distributions_node, dep])
-#     rowsum = TensorDotNode(mul_node, ConstantNode(np.ones(shape[-1])), 1)
-#     neg_node = ElementwiseNode(elementwise.ElementwiseScale(-1.0), [rowsum])
-#     return avg_node(neg_node)
-
-# def mse_node(dep: TensorNode, target: np.ndarray):
-#     neg_target_node = ConstantNode(-target)
-#     add_node = ElementwiseNode(elementwise.ElementwiseAdd(2), [dep, neg_target_node])
-#     sq_node = ElementwiseNode(elementwise.ElementwisePow(2), [add_node])
-#     return avg_node(sq_node)
