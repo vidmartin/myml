@@ -173,3 +173,17 @@ class ElementwiseCrossLog(ElementwiseFunction):
             res = lhs / rhs
             res[(lhs == 0.0) & (rhs == 0.0)] = 0.0
             return res
+
+@dataclasses.dataclass
+class ElementwiseSquaredDifference(ElementwiseFunction):
+    @override
+    def get_input_count(self):
+        return 2
+    @override
+    def _evaluate_function(self, inputs):
+        lhs, rhs = inputs
+        return (lhs - rhs) ** 2
+    @override
+    def _evaluate_partial_derivative(self, input_index, inputs):
+        lhs, rhs = inputs
+        return 2 * (lhs - rhs) * (-1)**input_index

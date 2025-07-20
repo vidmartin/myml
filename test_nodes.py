@@ -161,9 +161,9 @@ class NodesTestCase(unittest.TestCase):
         mse_torch = torch.nn.functional.mse_loss(tensordot_torch, y_torch, reduction="mean")
         mse_torch.backward()
 
-        A_node, W_node = [nodes.ConstantNode(arr) for arr in (A, W)]
+        A_node, W_node, y_node = [nodes.ConstantNode(arr) for arr in (A, W, y)]
         tensordot_node = nodes.TensorDotNode(A_node, W_node, 1)
-        mse_node = nodes.mse_node(tensordot_node, y)
+        mse_node = nodes.AvgNode(nodes.ElementwiseNode(elementwise.ElementwiseSquaredDifference(), [tensordot_node, y_node]), 1)
         A_grad, W_grad = mse_node.get_gradients_against([A_node, W_node])
 
         self.assertTrue(
@@ -183,9 +183,14 @@ class NodesTestCase(unittest.TestCase):
         mse_torch = torch.nn.functional.mse_loss(tensordot_torch, y_torch, reduction="mean")
         mse_torch.backward()
 
-        A_node, W_node = [nodes.ConstantNode(arr) for arr in (A, W)]
+        A_node, W_node, y_node = [nodes.ConstantNode(arr) for arr in (A, W, y)]
         tensordot_node = nodes.TensorDotNode(A_node, W_node, 1)
-        wrapped_mse_node = nodes.WrappingNode([tensordot_node], lambda nodes_: nodes.mse_node(nodes_[0], y))
+        wrapped_mse_node = nodes.WrappingNode(
+            [tensordot_node],
+            lambda nodes_: nodes.AvgNode(
+                nodes.ElementwiseNode(elementwise.ElementwiseSquaredDifference(), [nodes_[0], y_node]), 1
+            )
+        )
         A_grad, W_grad = wrapped_mse_node.get_gradients_against([A_node, W_node])
         self.assertTrue(
             np.allclose(wrapped_mse_node.get_value(), mse_torch.detach().numpy().reshape(wrapped_mse_node.get_shape())),
@@ -281,7 +286,7 @@ class NodesTestCase(unittest.TestCase):
         loss_torch = torch.nn.functional.mse_loss(temp_torch, torch.tensor(y), reduction="mean")
         loss_torch.backward()
 
-        X_node = nodes.ConstantNode(X)
+        X_node, y_node = nodes.ConstantNode(X), nodes.ConstantNode(y)
         weights_nodes = [
             nodes.ConstantNode(arr)
             for arr in weights
@@ -303,7 +308,7 @@ class NodesTestCase(unittest.TestCase):
                     )
                 ]
             )
-        loss_node = nodes.mse_node(temp_node, y)
+        loss_node = nodes.AvgNode(nodes.ElementwiseNode(elementwise.ElementwiseSquaredDifference(), [temp_node, y_node]), 1)
         grads = loss_node.get_gradients_against(weights_nodes + biases_nodes)
 
         self.assertTrue(np.allclose(loss_node.get_value(), loss_torch.detach().numpy()))
@@ -353,7 +358,7 @@ class NodesTestCase(unittest.TestCase):
         loss_torch = torch.nn.functional.mse_loss(temp_torch, torch.tensor(y), reduction="mean")
         loss_torch.backward()
 
-        X_node = nodes.ConstantNode(X)
+        X_node, y_node = nodes.ConstantNode(X), nodes.ConstantNode(y)
         weights_nodes = [
             nodes.ConstantNode(arr)
             for arr in weights
@@ -382,7 +387,7 @@ class NodesTestCase(unittest.TestCase):
                     )
                 ]
             )
-        loss_node = nodes.mse_node(temp_node, y)
+        loss_node = nodes.AvgNode(nodes.ElementwiseNode(elementwise.ElementwiseSquaredDifference(), [temp_node, y_node]), 1)
         grads = loss_node.get_gradients_against(weights_nodes + biases_nodes)
 
         self.assertTrue(np.allclose(loss_node.get_value(), loss_torch.detach().numpy()))
@@ -445,7 +450,8 @@ class NodesTestCase(unittest.TestCase):
                     )
                 ]
             )
-        loss_node = nodes.CrossEntropyLogitsNode(temp_node, nodes.ConstantNode(utils.one_hot_encode(y, 5)))
+        target_probas_node = nodes.ConstantNode(utils.one_hot_encode(y, 5))
+        loss_node = nodes.AvgNode(nodes.CrossEntropyLogitsNode(temp_node, target_probas_node), 1)
         grads = loss_node.get_gradients_against(weights_nodes + biases_nodes)
 
         self.assertTrue(np.allclose(loss_node.get_value(), loss_torch.detach().numpy()))
@@ -524,7 +530,8 @@ class NodesTestCase(unittest.TestCase):
                     )
                 ]
             )
-        loss_node = nodes.CrossEntropyLogitsNode(temp_node, utils.one_hot_encode(y, 5))
+        target_probas_node = nodes.ConstantNode(utils.one_hot_encode(y, 5))
+        loss_node = nodes.AvgNode(nodes.CrossEntropyLogitsNode(temp_node, target_probas_node), 1)
         grads = loss_node.get_gradients_against(weights_nodes + biases_nodes)
 
         self.assertTrue(np.allclose(loss_node.get_value(), loss_torch.detach().numpy()))

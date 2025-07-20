@@ -284,7 +284,7 @@ class SumNode(LazyDependentNode):
     @override
     def __repr__(self):
         return f"SumNode({self._deps[0]}, {self._n_axes_to_sum})"
-    
+
 class LogSumExpNode(LazyDependentNode):
     """
     Perform the LogSumExp operation along the last dimension.
