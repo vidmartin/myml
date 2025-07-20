@@ -38,6 +38,14 @@ class PermutationTestCase(unittest.TestCase):
             arr[0,1,2,4,3]
         )
         self.assertEqual(
+            arr.transpose(permutation.Permutation.bring_to_front((-1,), 5).permutation)[0,1,2,3,4],
+            arr[1,2,3,4,0]
+        )
+        self.assertEqual(
+            arr.transpose(permutation.Permutation.bring_to_back((-2,), 5).permutation)[0,1,2,3,4],
+            arr[0,1,2,4,3]
+        )
+        self.assertEqual(
             arr.transpose(permutation.Permutation.bring_to_front((1,2), 5).permutation)[0,1,2,3,4],
             arr[2,0,1,3,4]
         )
