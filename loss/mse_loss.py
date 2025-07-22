@@ -18,6 +18,9 @@ class MSELoss(LossFunction):
     def _construct(self, graph: ComputationalGraph, target: np.ndarray) -> nodes.TensorNode:
         assert graph.output_node.get_shape() == target.shape
         target_node = nodes.ConstantNode(target)
-        sq_diff_node = nodes.ElementwiseNode(elementwise.ElementwiseSquaredDifference(), [graph, target_node])
+        sq_diff_node = nodes.ElementwiseNode(
+            elementwise.ElementwiseSquaredDifference(),
+            [graph.output_node, target_node]
+        )
         mean_node = nodes.AvgNode(sq_diff_node, 1)
         return mean_node

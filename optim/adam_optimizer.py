@@ -8,6 +8,8 @@ from neural_network import NeuralNetwork
 
 TInput = TypeVar("TInput")
 
+# TODO: AdamW
+
 class AdamOptimizer(NeuralNetworkOptimizer):
     def __init__(
         self,

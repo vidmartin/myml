@@ -30,7 +30,7 @@ class SGDOptimizer(NeuralNetworkOptimizer):
     def _step(self, relevant_info):
         for key in self._param_ordering:
             self._velocities[key] = \
-                self._mu * self._velocities[key] + \
+                self._mu * self._velocities[key] - \
                 self._lr * relevant_info.grads_dict[key]
             self._param_values[key] += self._velocities[key]
     # TODO: Nesterov

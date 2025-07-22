@@ -29,7 +29,8 @@ class NeuralNetworkOptimizer(ABC, Generic[TInput]):
         self._loss_function = loss_function
         self._param_values = init_params
         self._param_ordering = list(self._neural_network.get_params().keys())
-    def step(self, input: TInput, target: np.ndarray):
+    def step(self, input: TInput, target: np.ndarray) -> float:
+        """Computes the loss, updates the parameters accordingly and returns that loss value."""
         graph = self._neural_network.construct(input, self._param_values)
         loss_node = self._loss_function.construct(graph, target)
         grads_list = loss_node.get_gradients_against(
@@ -41,6 +42,7 @@ class NeuralNetworkOptimizer(ABC, Generic[TInput]):
         self._step(
             OptimizationStepRelevantInfo(input, target, graph, loss_node, grads_dict)
         )
+        return loss_node.get_value().item()
     @abstractmethod
     def _step(self, relevant_info: OptimizationStepRelevantInfo[TInput]):
         raise NotImplementedError()

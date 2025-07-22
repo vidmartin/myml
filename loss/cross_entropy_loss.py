@@ -23,6 +23,6 @@ class CrossEntropyLoss(LossFunction):
     def _construct(self, graph: ComputationalGraph, target: np.ndarray) -> nodes.TensorNode:
         assert graph.output_node.get_shape() == target.shape
         target_node = nodes.ConstantNode(target)
-        cross_entropy_node = nodes.CrossEntropyLogitsNode(graph, target_node)
+        cross_entropy_node = nodes.CrossEntropyLogitsNode(graph.output_node, target_node)
         mean_node = nodes.AvgNode(cross_entropy_node, 1)
         return mean_node

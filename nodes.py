@@ -9,6 +9,7 @@ import numpy as np
 import elementwise
 import permutation
 import utils
+from node_visitor.node_visitor import NodeVisitor
 
 class TensorNode(ABC):
     @abstractmethod
@@ -56,6 +57,10 @@ class TensorNode(ABC):
     @abstractmethod
     def _get_input_gradients(self, output_gradient: np.ndarray) -> list[np.ndarray]:
         raise NotImplementedError()
+    
+    @abstractmethod
+    def accept(self, visitor: NodeVisitor):
+        raise NotImplementedError()
 
 class ConstantNode(TensorNode):
     def __init__(self, value: np.ndarray, name: str | None = None):
@@ -89,6 +94,10 @@ class ConstantNode(TensorNode):
     @override
     def _get_input_gradients(self, output_gradient):
         return []
+    
+    @override
+    def accept(self, visitor):
+        return visitor.visit_constant_node(self)
     
 class LazyDependentNode(TensorNode):
     def __init__(self, deps: list[TensorNode]):
@@ -153,6 +162,10 @@ class ElementwiseNode(LazyDependentNode):
     @override
     def __repr__(self):
         return f"ElementwiseNode({self._function}, [{', '.join(repr(dep) for dep in self.get_direct_dependencies())}])"
+    
+    @override
+    def accept(self, visitor):
+        return visitor.visit_elementwise_node(self)
 
 class TensorDotNode(LazyDependentNode):
     def __init__(
@@ -167,7 +180,8 @@ class TensorDotNode(LazyDependentNode):
         rhs_sh = rhs.get_shape()
         assert len(lhs_sh) >= n_axes_to_contract
         assert len(rhs_sh) >= n_axes_to_contract
-        assert all(lhs_sh[-n_axes_to_contract + i] == rhs_sh[i] for i in range(n_axes_to_contract))
+        assert all(lhs_sh[-n_axes_to_contract + i] == rhs_sh[i] for i in range(n_axes_to_contract)), \
+            f"the shapes of the inputs aren't compatible with TensorDotNode; lhs shape is {lhs_sh}, rhs shape is {rhs_sh}"
 
         self._lhs = lhs
         self._rhs = rhs
@@ -212,6 +226,10 @@ class TensorDotNode(LazyDependentNode):
     @override
     def __repr__(self):
         return f"TensorDotNode({self._lhs}, {self._rhs}, {self._n_axes_to_contract})"
+    
+    @override
+    def accept(self, visitor):
+        return visitor.visit_tensor_dot_node(self)
 
 class TransposeNode(LazyDependentNode):
     def __init__(self, dep: TensorNode, permutation: permutation.Permutation):
@@ -233,6 +251,10 @@ class TransposeNode(LazyDependentNode):
     @override
     def __repr__(self):
         return f"TransposeNode({self._deps[0]}, {self._permutation})"
+    
+    @override
+    def accept(self, visitor):
+        return visitor.visit_transpose_node(self)
 
 class ExtendNode(LazyDependentNode):
     def __init__(self, dep: TensorNode, prepend_dims: tuple[int, ...]):
@@ -253,6 +275,10 @@ class ExtendNode(LazyDependentNode):
     @override
     def __repr__(self):
         return f"ExtendNode({self._deps[0]}, {self._prepend_dims})"
+    
+    @override
+    def accept(self, visitor):
+        return visitor.visit_extend_node(self)
     
 class SumNode(LazyDependentNode):
     """
@@ -281,6 +307,10 @@ class SumNode(LazyDependentNode):
     @override
     def __repr__(self):
         return f"SumNode({self._deps[0]}, {self._n_axes_to_sum})"
+    
+    @override
+    def accept(self, visitor):
+        return visitor.visit_sum_node(self)
 
 class LogSumExpNode(LazyDependentNode):
     """
@@ -308,6 +338,10 @@ class LogSumExpNode(LazyDependentNode):
     def __repr__(self):
         return f"LogSumExpNode({self._deps[0]})"
     
+    @override
+    def accept(self, visitor):
+        return visitor.visit_logsumexp_node(self)
+    
     
 class SoftmaxNode(LazyDependentNode):
     """
@@ -333,6 +367,10 @@ class SoftmaxNode(LazyDependentNode):
     @override
     def __repr__(self):
         return f"SoftmaxNode({self._deps[0]})"
+    
+    @override
+    def accept(self, visitor):
+        return visitor.visit_softmax_node(self)
     
 class WrappingNode(LazyDependentNode):
     def __init__(self, deps: list[TensorNode], wrapper: Callable[[list[ConstantNode]], TensorNode]):
@@ -375,6 +413,10 @@ class WrappingNode(LazyDependentNode):
             return f"WrappingNode({self._deps}, <lambda>) {{ unitialized }}"
         return f"WrappingNode({self._deps}, <lambda>) {{ {self._wrapped} }}"
     
+    @override
+    def accept(self, visitor: NodeVisitor):
+        raise NotImplementedError()
+    
 class AvgNode(WrappingNode):
     """
     Computes the average (aka mean) along the first dimension.
@@ -393,6 +435,10 @@ class AvgNode(WrappingNode):
     @override
     def __repr__(self):
         return f"AvgNode({self._deps[0]})"
+    
+    @override
+    def accept(self, visitor):
+        return visitor.visit_avg_node(self)
     
 class CrossEntropyLogitsNode(WrappingNode):
     """
@@ -429,4 +475,10 @@ class CrossEntropyLogitsNode(WrappingNode):
     @override
     def __repr__(self):
         return f"CrossEntropyLogitsNode({self._yhat}, {self._y})"
+    
+    @override
+    def accept(self, visitor):
+        return visitor.visit_cross_entropy_logits_node(self)
+    
+# TODO: FlattenNode
     

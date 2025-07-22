@@ -1,0 +1,7 @@
+
+from loss.loss_function import LossFunction
+from loss.mse_loss import MSELoss
+from loss.cross_entropy_loss import CrossEntropyLoss
+from loss.label_smoothing_wrap_loss import LabelSmoothingWrapLoss
+from loss.weight_penalize_wrap_loss import WeightPenalizeWrapLoss
+from loss.one_hot_encode_wrap_loss import OneHotEncodeWrapLoss
