@@ -114,6 +114,15 @@ class ElementwisePow(ElementwiseUnary):
     @override
     def _evaluate_unary_derivative(self, input):
         return self.power * input ** (self.power - 1)
+    
+@dataclasses.dataclass
+class ElementwiseAbs(ElementwiseUnary):
+    @override
+    def _evaluate_unary_function(self, input):
+        return np.abs(input)
+    @override
+    def _evaluate_unary_derivative(self, input):
+        return np.sign(input)
 
 @dataclasses.dataclass
 class ElementwiseExp(ElementwiseUnary):
