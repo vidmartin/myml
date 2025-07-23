@@ -93,4 +93,32 @@ class UtilsTestCase(unittest.TestCase):
         out = utils.softmax(X)
         self.assertTrue(np.allclose(ref.detach().numpy(), out, atol=0.001), f"got {out} but wanted {ref}, naive calculation gives {np.log(np.exp(X).sum(-1))}")
 
-    
+    def test_instance_memo(self):
+        class Counter:
+            def __init__(self):
+                self._counter = 0
+            @utils.instance_memo
+            def inc_and_ret(self):
+                self._counter += 1
+                return self._counter
+            @utils.instance_memo
+            def add_and_ret(self, add: int):
+                self._counter += add
+                return self._counter
+            
+        c1, c2 = Counter(), Counter()
+
+        self.assertEqual(c1.add_and_ret(3), 3)
+        self.assertEqual(c2.add_and_ret(4), 4)
+
+        self.assertEqual(c1.inc_and_ret(), 4)
+        self.assertEqual(c2.add_and_ret(4), 4)
+
+        self.assertEqual(c1.add_and_ret(4), 8)
+        self.assertEqual(c2.inc_and_ret(), 5)
+
+        self.assertEqual(c1.inc_and_ret(), 4)
+        self.assertEqual(c2.add_and_ret(3), 8)
+
+        self.assertEqual(c1.add_and_ret(3), 3)
+        self.assertEqual(c2.inc_and_ret(), 5)

@@ -4,6 +4,7 @@ from typing import *
 from abc import ABC, abstractmethod
 import dataclasses
 import numpy as np
+from elementwise_visitor.elementwise_visitor import ElementwiseVisitor
 
 class ElementwiseFunction(ABC):
     @abstractmethod
@@ -27,6 +28,10 @@ class ElementwiseFunction(ABC):
     @abstractmethod
     def _evaluate_partial_derivative(self, input_index: int, inputs: list[np.ndarray]) -> np.ndarray:
         raise NotImplementedError()
+    
+    @abstractmethod
+    def accept(self, visitor: ElementwiseVisitor):
+        raise NotImplementedError()
 
 @dataclasses.dataclass
 class ElementwiseAdd(ElementwiseFunction):
@@ -44,6 +49,10 @@ class ElementwiseAdd(ElementwiseFunction):
     def _evaluate_partial_derivative(self, input_index, inputs):
         assert len(set(input_.shape for input_ in inputs)) == 1
         return np.ones(inputs[0].shape, dtype=np.float32)
+    
+    @override
+    def accept(self, visitor):
+        return visitor.visit_add(self)
 
 @dataclasses.dataclass
 class ElementwiseMul(ElementwiseFunction):
@@ -64,6 +73,10 @@ class ElementwiseMul(ElementwiseFunction):
             lambda a, b: a * b,
             [input_ for i, input_ in enumerate(inputs) if i != input_index]
         )
+    
+    @override
+    def accept(self, visitor):
+        return visitor.visit_mul(self)
     
 class ElementwiseUnary(ElementwiseFunction):
     @override
@@ -94,6 +107,10 @@ class ElementwiseSin(ElementwiseUnary):
     @override
     def _evaluate_unary_derivative(self, input):
         return np.cos(input)
+    
+    @override
+    def accept(self, visitor):
+        return visitor.visit_sin(self)
 
 @dataclasses.dataclass    
 class ElementwiseCos(ElementwiseUnary):
@@ -103,6 +120,10 @@ class ElementwiseCos(ElementwiseUnary):
     @override
     def _evaluate_unary_derivative(self, input):
         return -np.sin(input)
+    
+    @override
+    def accept(self, visitor):
+        return visitor.visit_cos(self)
 
 @dataclasses.dataclass
 class ElementwisePow(ElementwiseUnary):
@@ -115,6 +136,10 @@ class ElementwisePow(ElementwiseUnary):
     def _evaluate_unary_derivative(self, input):
         return self.power * input ** (self.power - 1)
     
+    @override
+    def accept(self, visitor):
+        return visitor.visit_pow(self)
+    
 @dataclasses.dataclass
 class ElementwiseAbs(ElementwiseUnary):
     @override
@@ -123,6 +148,10 @@ class ElementwiseAbs(ElementwiseUnary):
     @override
     def _evaluate_unary_derivative(self, input):
         return np.sign(input)
+    
+    @override
+    def accept(self, visitor):
+        return visitor.visit_abs(self)
 
 @dataclasses.dataclass
 class ElementwiseExp(ElementwiseUnary):
@@ -133,6 +162,10 @@ class ElementwiseExp(ElementwiseUnary):
     def _evaluate_unary_derivative(self, input):
         return np.exp(input)
 
+    @override
+    def accept(self, visitor):
+        return visitor.visit_exp(self)
+
 @dataclasses.dataclass
 class ElementwiseLog(ElementwiseUnary):
     @override
@@ -141,6 +174,10 @@ class ElementwiseLog(ElementwiseUnary):
     @override
     def _evaluate_unary_derivative(self, input):
         return 1.0 / input
+    
+    @override
+    def accept(self, visitor):
+        return visitor.visit_log(self)
 
 @dataclasses.dataclass
 class ElementwiseScale(ElementwiseUnary):
@@ -152,6 +189,10 @@ class ElementwiseScale(ElementwiseUnary):
     @override
     def _evaluate_unary_derivative(self, input):
         return np.full(input.shape, self.factor)
+    
+    @override
+    def accept(self, visitor):
+        return visitor.visit_scale(self)
 
 @dataclasses.dataclass
 class ElementwiseReLU(ElementwiseUnary):
@@ -161,6 +202,10 @@ class ElementwiseReLU(ElementwiseUnary):
     @override
     def _evaluate_unary_derivative(self, input):
         return (input > 0).astype(input.dtype)
+    
+    @override
+    def accept(self, visitor):
+        return visitor.visit_relu(self)
 
 @dataclasses.dataclass
 class ElementwiseCrossLog(ElementwiseFunction):
@@ -182,6 +227,10 @@ class ElementwiseCrossLog(ElementwiseFunction):
             res = lhs / rhs
             res[(lhs == 0.0) & (rhs == 0.0)] = 0.0
             return res
+        
+    @override
+    def accept(self, visitor):
+        return visitor.visit_cross_log(self)
 
 @dataclasses.dataclass
 class ElementwiseSquaredDifference(ElementwiseFunction):
@@ -196,3 +245,7 @@ class ElementwiseSquaredDifference(ElementwiseFunction):
     def _evaluate_partial_derivative(self, input_index, inputs):
         lhs, rhs = inputs
         return 2 * (lhs - rhs) * (-1)**input_index
+    
+    @override
+    def accept(self, visitor):
+        return visitor.visit_squared_difference(self)
