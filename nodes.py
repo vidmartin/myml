@@ -98,7 +98,7 @@ class ConstantNode(TensorNode):
         return []
     
     @override
-    def accept(self, visitor):
+    def accept(self, visitor: NodeVisitor[TResult]) -> TResult:
         return visitor.visit_constant_node(self)
     
 class LazyDependentNode(TensorNode):
@@ -166,7 +166,7 @@ class ElementwiseNode(LazyDependentNode):
         return f"ElementwiseNode({self._function}, [{', '.join(repr(dep) for dep in self.get_direct_dependencies())}])"
     
     @override
-    def accept(self, visitor):
+    def accept(self, visitor: NodeVisitor[TResult]) -> TResult:
         return visitor.visit_elementwise_node(self)
 
 class TensorDotNode(LazyDependentNode):
@@ -230,7 +230,7 @@ class TensorDotNode(LazyDependentNode):
         return f"TensorDotNode({self._lhs}, {self._rhs}, {self._n_axes_to_contract})"
     
     @override
-    def accept(self, visitor):
+    def accept(self, visitor: NodeVisitor[TResult]) -> TResult:
         return visitor.visit_tensor_dot_node(self)
 
 class TransposeNode(LazyDependentNode):
@@ -255,7 +255,7 @@ class TransposeNode(LazyDependentNode):
         return f"TransposeNode({self._deps[0]}, {self._permutation})"
     
     @override
-    def accept(self, visitor):
+    def accept(self, visitor: NodeVisitor[TResult]) -> TResult:
         return visitor.visit_transpose_node(self)
 
 class ExtendNode(LazyDependentNode):
@@ -279,7 +279,7 @@ class ExtendNode(LazyDependentNode):
         return f"ExtendNode({self._deps[0]}, {self._prepend_dims})"
     
     @override
-    def accept(self, visitor):
+    def accept(self, visitor: NodeVisitor[TResult]) -> TResult:
         return visitor.visit_extend_node(self)
     
 class SumNode(LazyDependentNode):
@@ -311,7 +311,7 @@ class SumNode(LazyDependentNode):
         return f"SumNode({self._deps[0]}, {self._n_axes_to_sum})"
     
     @override
-    def accept(self, visitor):
+    def accept(self, visitor: NodeVisitor[TResult]) -> TResult:
         return visitor.visit_sum_node(self)
 
 class LogSumExpNode(LazyDependentNode):
@@ -341,9 +341,8 @@ class LogSumExpNode(LazyDependentNode):
         return f"LogSumExpNode({self._deps[0]})"
     
     @override
-    def accept(self, visitor):
+    def accept(self, visitor: NodeVisitor[TResult]) -> TResult:
         return visitor.visit_logsumexp_node(self)
-    
     
 class SoftmaxNode(LazyDependentNode):
     """
@@ -371,7 +370,7 @@ class SoftmaxNode(LazyDependentNode):
         return f"SoftmaxNode({self._deps[0]})"
     
     @override
-    def accept(self, visitor):
+    def accept(self, visitor: NodeVisitor[TResult]) -> TResult:
         return visitor.visit_softmax_node(self)
     
 class WrappingNode(LazyDependentNode):
@@ -416,7 +415,7 @@ class WrappingNode(LazyDependentNode):
         return f"WrappingNode({self._deps}, <lambda>) {{ {self._wrapped} }}"
     
     @override
-    def accept(self, visitor: NodeVisitor):
+    def accept(self, visitor: NodeVisitor[TResult]) -> TResult:
         raise NotImplementedError()
     
 class AvgNode(WrappingNode):
@@ -440,7 +439,7 @@ class AvgNode(WrappingNode):
         return f"AvgNode({self._deps[0]})"
     
     @override
-    def accept(self, visitor):
+    def accept(self, visitor: NodeVisitor[TResult]) -> TResult:
         return visitor.visit_avg_node(self)
     
 class CrossEntropyLogitsNode(WrappingNode):
@@ -480,7 +479,7 @@ class CrossEntropyLogitsNode(WrappingNode):
         return f"CrossEntropyLogitsNode({self._yhat}, {self._y})"
     
     @override
-    def accept(self, visitor):
+    def accept(self, visitor: NodeVisitor[TResult]) -> TResult:
         return visitor.visit_cross_entropy_logits_node(self)
     
 # TODO: FlattenNode

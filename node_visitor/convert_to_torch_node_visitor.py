@@ -8,6 +8,7 @@ import elementwise
 import utils
 import torch
 
+# TODO: make torch optional
 class ConvertToTorchNodeVisitor(NodeVisitor[torch.Tensor]):
     """
     Converts our nodes to PyTorch tensors.
@@ -22,14 +23,14 @@ class ConvertToTorchNodeVisitor(NodeVisitor[torch.Tensor]):
     @override
     @utils.instance_memo
     def visit_constant_node(self, node):
-        torch.tensor(node.get_value(), requires_grad=True)
+        return torch.tensor(node.get_value(), requires_grad=True)
     @override
     @utils.instance_memo
     def visit_elementwise_node(self, node):
         deps_nodes = node.get_direct_dependencies()
         deps_torch = [dep.accept(self) for dep in deps_nodes]
         elemwise_visitor = ConvertToTorchElementwiseVisitor(deps_torch)
-        return node.accept(elemwise_visitor)
+        return node._function.accept(elemwise_visitor)
     @override
     @utils.instance_memo
     def visit_tensor_dot_node(self, node):
@@ -55,7 +56,7 @@ class ConvertToTorchNodeVisitor(NodeVisitor[torch.Tensor]):
     def visit_sum_node(self, node):
         dep_node, = node.get_direct_dependencies()
         dep_torch = dep_node.accept(self)
-        dep_torch.sum(tuple(range(node._n_axes_to_sum)))
+        return dep_torch.sum(tuple(range(node._n_axes_to_sum)))
     @override
     @utils.instance_memo
     def visit_logsumexp_node(self, node):
@@ -79,4 +80,4 @@ class ConvertToTorchNodeVisitor(NodeVisitor[torch.Tensor]):
     def visit_cross_entropy_logits_node(self, node):
         yhat_logits_node, y_probas_node = node.get_direct_dependencies()
         yhat_logits_torch, y_probas_torch = yhat_logits_node.accept(self), y_probas_node.accept(self)
-        torch.nn.functional.cross_entropy(yhat_logits_torch, y_probas_torch)
+        return torch.nn.functional.cross_entropy(yhat_logits_torch, y_probas_torch, reduction="none")

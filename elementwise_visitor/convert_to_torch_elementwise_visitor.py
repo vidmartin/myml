@@ -5,6 +5,7 @@ import elementwise
 import functools
 import torch
 
+# TODO: make torch optional
 class ConvertToTorchElementwiseVisitor(ElementwiseVisitor):
     """
     Applies our elementwise functions to PyTorch tensors instead of numpy arrays.
