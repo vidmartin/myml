@@ -8,7 +8,7 @@ from neural_network import NeuralNetwork
 
 TInput = TypeVar("TInput")
 
-class RMSPropMomentumOptimizer(NeuralNetworkOptimizer):
+class RMSPropOptimizer(NeuralNetworkOptimizer):
     def __init__(
         self,
         neural_network: NeuralNetwork[TInput],

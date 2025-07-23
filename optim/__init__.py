@@ -1,5 +1,5 @@
 
 from optim.neural_network_optimizer import NeuralNetworkOptimizer
 from optim.sgd_optimizer import SGDOptimizer
-from optim.rmsprop_optimizer import RMSPropMomentumOptimizer
+from optim.rmsprop_optimizer import RMSPropOptimizer
 from optim.adam_optimizer import AdamOptimizer
