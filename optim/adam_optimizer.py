@@ -38,7 +38,7 @@ class AdamOptimizer(NeuralNetworkOptimizer):
         }
         self._t: int = 0
     @override
-    def _step(self, relevant_info):
+    def perform_step(self, relevant_info):
         self._t += 1
         for key in self._param_ordering:
             self._aggregates1[key] = \

@@ -27,7 +27,7 @@ class SGDOptimizer(NeuralNetworkOptimizer):
             for key in self._param_ordering
         }
     @override
-    def _step(self, relevant_info):
+    def perform_step(self, relevant_info):
         for key in self._param_ordering:
             self._velocities[key] = \
                 self._mu * self._velocities[key] - \

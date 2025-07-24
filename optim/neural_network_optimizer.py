@@ -29,8 +29,23 @@ class NeuralNetworkOptimizer(ABC, Generic[TInput]):
         self._loss_function = loss_function
         self._param_values = init_params
         self._param_ordering = list(self._neural_network.get_params().keys())
-    def step(self, input: TInput, target: np.ndarray) -> float:
-        """Computes the loss, updates the parameters accordingly and returns that loss value."""
+    def step(self, input: TInput, target: np.ndarray) -> OptimizationStepRelevantInfo:
+        """
+        Computes the loss and its gradients with respect to parameters and
+        then perfoms the training step i.e. updates the parameters accordingly.
+
+        Internally just calls `prepare_step` and then passes the returned object
+        to `perform_step`. The same object is then returned from this method.
+        """
+        relevant_info = self.prepare_step(input, target)
+        self.perform_step(relevant_info)
+        return relevant_info
+    def prepare_step(self, input: TInput, target: np.ndarray) -> OptimizationStepRelevantInfo:
+        """
+        Computes the loss and its gradients with respect to parameters and
+        returns an object, that can be passed to the `perform_step` method
+        to perform the training step i.e. update the parameters accordingly.
+        """
         graph = self._neural_network.construct(input, self._param_values)
         loss_node = self._loss_function.construct(graph, target)
         grads_list = loss_node.get_gradients_against(
@@ -39,10 +54,10 @@ class NeuralNetworkOptimizer(ABC, Generic[TInput]):
         grads_dict = {
             key: val for key, val in zip(self._param_ordering, grads_list)
         }
-        self._step(
-            OptimizationStepRelevantInfo(input, target, graph, loss_node, grads_dict)
-        )
-        return loss_node.get_value().item()
+
+        relevant_info = OptimizationStepRelevantInfo(input, target, graph, loss_node, grads_dict)
+        return relevant_info
     @abstractmethod
-    def _step(self, relevant_info: OptimizationStepRelevantInfo[TInput]):
+    def perform_step(self, relevant_info: OptimizationStepRelevantInfo[TInput]):
+        """Updates the parameters according to the given information."""
         raise NotImplementedError()

@@ -35,7 +35,7 @@ class RMSPropOptimizer(NeuralNetworkOptimizer):
             for key in self._param_ordering
         }
     @override
-    def _step(self, relevant_info):
+    def perform_step(self, relevant_info):
         for key in self._param_ordering:
             self._aggregates[key] = \
                 self._rho * self._aggregates[key] + \
