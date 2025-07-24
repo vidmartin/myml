@@ -81,3 +81,9 @@ class ConvertToTorchNodeVisitor(NodeVisitor[torch.Tensor]):
         yhat_logits_node, y_probas_node = node.get_direct_dependencies()
         yhat_logits_torch, y_probas_torch = yhat_logits_node.accept(self), y_probas_node.accept(self)
         return torch.nn.functional.cross_entropy(yhat_logits_torch, y_probas_torch, reduction="none")
+    @override
+    @utils.instance_memo
+    def visit_reshape_node(self, node):
+        dep_node, = node.get_direct_dependencies()
+        dep_torch = dep_node.accept(self)
+        return dep_torch.reshape(node._target_shape)

@@ -39,3 +39,6 @@ class NodeVisitor(ABC, Generic[TReturn]):
     @abstractmethod
     def visit_cross_entropy_logits_node(self, node: nodes.CrossEntropyLogitsNode) -> TReturn:
         raise NotImplementedError()
+    @abstractmethod
+    def visit_reshape_node(self, node: nodes.ReshapeNode) -> TReturn:
+        raise NotImplementedError()

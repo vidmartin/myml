@@ -1,5 +1,6 @@
 
 from typing import *
+import functools
 import numpy as np
 
 def one_hot_encode(arr: np.ndarray, n_classes: int):
@@ -21,6 +22,16 @@ def log_sum_exp(arr: np.ndarray):
 def softmax(arr: np.ndarray):
     """Perform softmax along the last dimension."""
     return np.exp(arr - log_sum_exp(arr)[...,np.newaxis])
+
+def normalize_dest_shape(src_shape: tuple[int, ...], dest_shape: tuple[int, ...]):
+    n_jokers = sum(1 for v in dest_shape if v < 0)
+    src_volume = functools.reduce(lambda x, y: x * y, src_shape)
+    dest_part_volume = functools.reduce(lambda x, y: x * y, [v for v in dest_shape if v >= 0])
+    assert (n_jokers == 1 and src_volume % dest_part_volume == 0) or (n_jokers == 0 and src_volume == dest_part_volume)
+    return tuple(
+        v if v >= 0 else src_volume // dest_part_volume
+        for v in dest_shape
+    )
 
 T = TypeVar("T")
 if False:

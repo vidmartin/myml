@@ -481,6 +481,24 @@ class CrossEntropyLogitsNode(WrappingNode):
     @override
     def accept(self, visitor: NodeVisitor[TResult]) -> TResult:
         return visitor.visit_cross_entropy_logits_node(self)
-    
-# TODO: FlattenNode
-    
+
+class ReshapeNode(LazyDependentNode):
+    def __init__(self, dep: TensorNode, target_shape: tuple[int, ...]):
+        dep_shape = dep.get_shape()
+        super().__init__([dep])
+        self._target_shape = utils.normalize_dest_shape(dep_shape, target_shape)
+    @override
+    def get_shape(self):
+        return self._target_shape
+    @override
+    def _get_value(self):
+        return self._deps[0].get_value().reshape(self._target_shape)
+    @override
+    def _get_input_gradients(self, output_gradient):
+        return [output_gradient.reshape(self._deps[0].get_shape())]
+    @override
+    def accept(self, visitor):
+        return visitor.visit_reshape_node(self)
+    @override
+    def __repr__(self):
+        return f"ReshapeNode({self._deps[0]}, {self._target_shape})"

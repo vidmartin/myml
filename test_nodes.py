@@ -153,6 +153,22 @@ class NodesTestCase(unittest.TestCase):
         
         self.assertTrue(np.allclose(A_grad, A_torch.grad.detach().numpy()))
 
+    def test_reshape(self) -> None:
+        A = self._rng.random((4, 4, 4, 4, 4))
+        output_grad = self._rng.random((4, 4 * 4 * 4, 4))
+
+        A_torch = torch.tensor(A, requires_grad=True)
+        out_torch = A_torch.reshape((4, -1, 4))
+        out_torch.backward(torch.tensor(output_grad))
+
+        A_node = nodes.ConstantNode(A)
+        out_node = nodes.ReshapeNode(A_node, (4, -1, 4))
+        A_grad, = out_node.get_gradients_against([A_node], output_grad)
+
+        self.assertTrue(np.allclose(out_node.get_value(), out_torch.detach().numpy()))
+        
+        self.assertTrue(np.allclose(A_grad, A_torch.grad.detach().numpy()))
+
     def test_mse(self) -> None:
         A, W, y = self._rng.random((100, 4)), self._rng.random((4, 1)), self._rng.random((100, 1))
         
