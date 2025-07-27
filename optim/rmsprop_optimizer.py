@@ -42,6 +42,6 @@ class RMSPropOptimizer(NeuralNetworkOptimizer):
                 (1 - self._rho) * relevant_info.grads_dict[key] ** 2
             grad_multiplier = self._lr / (self._aggregates[key] ** 0.5 + self._delta)
             self._velocities[key] = \
-                self._mu * self._velocities[key] + \
+                self._mu * self._velocities[key] - \
                 grad_multiplier * relevant_info.grads_dict[key]
             self._param_values[key] += self._velocities[key]

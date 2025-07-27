@@ -2,7 +2,7 @@
 from typing import *
 import numpy as np
 from optim.neural_network_optimizer import NeuralNetworkOptimizer
-from optim.defaults import LR_DEFAULT
+from optim.defaults import LR_DEFAULT, MU_DEFAULT
 from loss.loss_function import LossFunction
 from neural_network import NeuralNetwork
 
@@ -15,7 +15,7 @@ class SGDOptimizer(NeuralNetworkOptimizer):
         loss_function: LossFunction,
         init_params: Dict[str, np.ndarray],
         lr: float = LR_DEFAULT,
-        mu: float = 0.0,
+        mu: float = MU_DEFAULT,
     ):
         super().__init__(neural_network, loss_function, init_params)
         self._lr = lr

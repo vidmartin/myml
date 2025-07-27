@@ -36,26 +36,30 @@ class WeightPenalizeWrapLoss(LossFunction):
         if self._kind == "l1":
             penalizing_nodes = [
                 nodes.ElementwiseNode(
-                    elementwise.ElementwiseAbs(), node
+                    elementwise.ElementwiseAbs(), [node]
                 ) for node in param_nodes
             ]
         elif self._kind == "l2":
             penalizing_nodes = [
                 nodes.ElementwiseNode(
-                    elementwise.ElementwisePow(2), node
+                    elementwise.ElementwisePow(2), [node]
                 ) for node in param_nodes
             ]
         else:
             raise NotImplementedError(f"unknown weight penalization kind '{self._kind}'")
         
         penalizing_nodes = [
-            nodes.SumNode(len(node.get_shape()))
+            nodes.SumNode(node, len(node.get_shape()))
             for node in penalizing_nodes
         ]
 
         total_penalizing_node = nodes.ElementwiseNode(
-            elementwise.ElementwiseAdd(len(penalizing_nodes)),
-            penalizing_nodes
+            elementwise.ElementwiseScale(self._factor), [
+                nodes.ElementwiseNode(
+                    elementwise.ElementwiseAdd(len(penalizing_nodes)),
+                    penalizing_nodes
+                )
+            ]
         )
 
         return nodes.ElementwiseNode(
