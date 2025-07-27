@@ -23,7 +23,12 @@ class NeuralNetwork(ABC, Generic[TInput]):
     def assert_params_valid(self, params: Dict[str, np.ndarray]):
         param_specs = self.get_params()
         assert param_specs.keys() == params.keys()
-        assert all(params[k].shape == param_specs[k].shape for k in params)
+        assert all(params[k].shape == param_specs[k].shape for k in params), \
+            f"the following params were passed wrong shapes: " + \
+            "; ".join(
+                f"param {k} wants shape {param_specs[k].shape}, but got {params[k].shape}"
+                for k in params if param_specs[k].shape != params[k].shape
+            )
     @final
     def construct(self, input: TInput, params: Dict[str, np.ndarray]) -> ComputationalGraph:
         self.assert_params_valid(params)
