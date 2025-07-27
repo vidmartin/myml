@@ -8,8 +8,6 @@ from neural_network import NeuralNetwork
 
 TInput = TypeVar("TInput")
 
-# TODO: AdamW
-
 class AdamOptimizer(NeuralNetworkOptimizer):
     def __init__(
         self,
@@ -20,12 +18,14 @@ class AdamOptimizer(NeuralNetworkOptimizer):
         rho1: float = RHO1_DEFAULT,
         rho2: float = RHO2_DEFAULT,
         delta: float = DELTA_DEFAULT,
+        weight_decay: float = 0.0,
     ):
         super().__init__(neural_network, loss_function, init_params)
         self._lr = lr
         self._rho1 = rho1
         self._rho2 = rho2
         self._delta = delta
+        self._weight_decay = weight_decay
 
         param_specs = neural_network.get_params()
         self._aggregates1 = {
@@ -52,3 +52,4 @@ class AdamOptimizer(NeuralNetworkOptimizer):
             corrected_aggregate2 = self._aggregates2[key] / (1 - self._rho2 ** self._t)
             
             self._param_values[key] -= self._lr * corrected_aggregate1 / (self._delta + corrected_aggregate2 ** 0.5)
+            self._param_values[key] -= self._lr * self._weight_decay * self._param_values[key]
