@@ -48,17 +48,13 @@ Other classes derived from `TensorNode` represent various combinations of other 
 
 The `d` means that we match the last `d` indices of `A` with the first `d` indices of `B` and sum over all the possible values of these matched indices for each combination of the other indices. Mathematically:
 
-$$
-(AB)_{i_1,i_2,i_3,i_4} = \sum_{j} A_{i_1,i_2,j} B_{j,i_3,i_4}.
-$$
+$(AB)_{i_1,i_2,i_3,i_4} = \sum_{j} A_{i_1,i_2,j} B_{j,i_3,i_4}.$
 
 The resulting shape is thus $(4,4,4,4)$.
 
 If we had `d = 2` instead, we would have
 
-$$
-(AB)_{i_1,i_2} = \sum_{j_1,j_2} A_{i_1,j_1,j_2} B_{j_1,j_2,i_2}
-$$
+$(AB)_{i_1,i_2} = \sum_{j_1,j_2} A_{i_1,j_1,j_2} B_{j_1,j_2,i_2}$
 
 and the resulting shape would be $(4,4)$.
 
