@@ -1,5 +1,5 @@
 
-from neural_network.neural_network import NeuralNetwork
+from neural_network.neural_network import NeuralNetwork, ComputationalGraph, ParameterSpecification
 from neural_network.elementwise import ElementwiseModule
 from neural_network.flatten import FlattenModule
 from neural_network.input_numpy import InputNumpyModule

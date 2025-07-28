@@ -135,24 +135,25 @@ The `SequentialModule`, `FlattenModule`, `LinearModule` and `ElementwiseModule(e
 To train the neural network, we need an instance of `NeuralNetworkOptimizer`. For example, we may use the basic `SGDOptimizer`:
 
     import optim
+    import loss
 
-    optim.SGDOptimizer(
+    optimizer = optim.SGDOptimizer(
         composed_model,
         loss.OneHotEncodeWrapLoss(
             loss.CrossEntropyLoss(), 10
         ), {
-            "1.weight": np.random.random((784, 100)),
-            "3.weight": np.random.random((100, 100)),
-            "5.weight": np.random.random((100, 10)),
-            "1.bias": np.random.random((100,)),
-            "3.bias": np.random.random((100,)),
-            "5.bias": np.random.random((10,)),
+            "1.weight": (np.random.random((784, 100)) * 2 - 1) * ((6 / (100 + 784)) ** 0.5),
+            "3.weight": (np.random.random((100, 100)) * 2 - 1) * ((6 / (100 + 100)) ** 0.5),
+            "5.weight": (np.random.random((100, 10)) * 2 - 1) * ((6 / (100 + 10)) ** 0.5),
+            "1.bias": np.zeros((100,)),
+            "3.bias": np.zeros((100,)),
+            "5.bias": np.zeros((10,)),
         },
     )
 
 Notice that apart from the model to be trained, we need to pass two more things to the optimizer:
 - The loss function: an instance of the `LossFunction` abstract class, which takes a computational graph (outputted from a neural network) and a numpy array with the target outputs and returns a scalar `TensorNode` quantifying how far the model's outputs are from the desired outputs. The gradient is then computed against this function, i.e. it is this `TensorNode` that the optimizer will call `get_gradients_against` on.
-- The initial parameter values: unlike in PyTorch, in my framework the neural network doesn't remember its parameters. A dictionary of the parameter values must be passed with each evaluation of the neural network. It is the optimizer that remembers the parameter values in my framework. So we need to pass the initial parameter values to the optimizer. Note that initializing the parameters the way I do in the example is not best and there are much better ways, e.g. the Xavier initialization.
+- The initial parameter values: unlike in PyTorch, in my framework the neural network doesn't remember its parameters. A dictionary of the parameter values must be passed with each evaluation of the neural network. It is the optimizer that remembers the parameter values in my framework. So we need to pass the initial parameter values to the optimizer. The distribution from which the individual parameter values are generated is very important for how well the training will go, here I'm using the renowned Xavier initialization.
 
 To demystify the names of the parameters -- `1.weight`, `3.weight`, etc. -- these came into being in the following way:
 1. Each instance of `LinearModule` defines two parameters -- `weight` and `bias`. Its `get_params` method returns these parameters. `FlattenModule` and `ElementwiseModule` have no parameters.
@@ -161,6 +162,8 @@ To demystify the names of the parameters -- `1.weight`, `3.weight`, etc. -- thes
 
 To train the network, we need some dataset. This network is actually designed to work with the Fashion MNIST dataset, which I we can get via the `torchvision` package:
 
+    import torchvision
+    
     training_data = torchvision.datasets.FashionMNIST(
         root="data",
         train=True,
@@ -172,6 +175,8 @@ To train the network, we need some dataset. This network is actually designed to
     )
 
 And then I use a PyTorch dataloader to split this dataset into batches:
+
+    import torch
 
     batch_size = 64
     train_dl = torch.utils.data.DataLoader(training_data, batch_size=batch_size, shuffle=True)
@@ -185,12 +190,12 @@ We may then iterate through the batches and call the optimizer to tune the model
         for i, (X_torch, y_torch) in enumerate(train_dl):
             X, y = X_torch.detach().numpy(), y_torch.detach().numpy()
 
-            relevant_info = optim.prepare_step(X, y)
-            optim.perform_step(relevant_info)
+            relevant_info = optimizer.prepare_step(X, y)
+            optimizer.perform_step(relevant_info)
 
             loss_num = relevant_info.loss_node.get_value().item()
             print(f"\r -> batch ({i + 1}/{len(train_dl)}), loss is {loss_num:.3f}", end="")
-        print(f"\rEpoch {j} done")
+        print(f"\rEpoch {j} done" + " " * 30)
 
 Notice:
 - Because PyTorch's DataLoader returns PyTorch tensors and my framework works with numpy arrays, we need to convert the PyTorch tensors to numpy arrays.
@@ -203,10 +208,10 @@ The optimizer also has a method called `step`, which first calls `prepare_step` 
         for i, (X_torch, y_torch) in enumerate(train_dl):
             X, y = X_torch.detach().numpy(), y_torch.detach().numpy()
 
-            relevant_info = optim.step(X, y)
+            relevant_info = optimizer.step(X, y)
 
             loss_num = relevant_info.loss_node.get_value().item()
             print(f"\r -> batch ({i + 1}/{len(train_dl)}), loss is {loss_num:.3f}", end="")
-        print(f"\rEpoch {j} done")
+        print(f"\rEpoch {j} done" + " " * 30)
 
 Note that you would also probably want to measure the total loss against the entire training dataset as well as the accuracy after each epoch. Furthermore, you would want to have a testing dataset and also compute the loss and accuracy against the testing dataset. I want to keep the examples simple however.
