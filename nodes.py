@@ -11,6 +11,8 @@ import permutation
 import utils
 from node_visitor.node_visitor import NodeVisitor
 
+# TODO: split into multiple files
+
 TResult = TypeVar("TResult")
 
 class TensorNode(ABC):
