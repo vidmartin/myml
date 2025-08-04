@@ -1,7 +1,8 @@
 
-from neural_network.neural_network import NeuralNetwork, ComputationalGraph, ParameterSpecification
+from neural_network.neural_network import NeuralNetwork, ComputationalGraph, ParameterSpecification, EvaluationMode
 from neural_network.elementwise import ElementwiseModule
 from neural_network.flatten import FlattenModule
 from neural_network.input_numpy import InputNumpyModule
 from neural_network.linear import LinearModule
 from neural_network.sequential import SequentialModule
+from neural_network.dropout import DropoutModule

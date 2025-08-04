@@ -1,6 +1,7 @@
 
 from typing import *
 import functools
+from abc import ABC, abstractmethod
 import numpy as np
 
 def one_hot_encode(arr: np.ndarray, n_classes: int):
@@ -55,3 +56,34 @@ else:
                 attr_val[args[1:]] = callable_(*args)
             return attr_val[args[1:]]
         return inner
+
+class RandomGenerator(ABC):
+    @abstractmethod
+    def __call__(self, shape: tuple[int, ...]) -> np.ndarray:
+        """Returns a random numpy array of the given shape."""
+        raise NotImplementedError()
+    
+class NumpyUniformRandomGenerator(RandomGenerator):
+    def __init__(self, rng: np.random.Generator | None):
+        self._rng = rng
+    @override
+    def __call__(self, shape: tuple[int, ...]) -> np.ndarray:
+        if self._rng is not None:
+            return self._rng.random(shape)
+        return np.random.random(shape)
+
+try:
+    # TODO: check if this is how optional dependencies are properly handled
+
+    import torch
+
+    class TorchUniformRandomGenerator(RandomGenerator):
+        @override
+        def __call__(self, shape: tuple[int, ...]) -> np.ndarray:
+            rand_tensor = torch.rand(shape, requires_grad=False)
+            return rand_tensor.numpy()
+except ImportError:
+    class TorchUniformRandomGenerator(RandomGenerator):
+        @override
+        def __call__(self, shape: tuple[int, ...]) -> np.ndarray:
+            raise NotImplementedError("this class can't be used when PyTorch is not imported")

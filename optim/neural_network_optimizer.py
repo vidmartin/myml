@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 import dataclasses
 import numpy as np
 import nodes
-from neural_network import ComputationalGraph, NeuralNetwork
+from neural_network import ComputationalGraph, NeuralNetwork, EvaluationMode
 from loss.loss_function import LossFunction
 
 TInput = TypeVar("TInpput")
@@ -46,8 +46,8 @@ class NeuralNetworkOptimizer(ABC, Generic[TInput]):
         returns an object, that can be passed to the `perform_step` method
         to perform the training step i.e. update the parameters accordingly.
         """
-        graph = self._neural_network.construct(input, self._param_values)
-        loss_node = self._loss_function.construct(graph, target)
+        graph = self._neural_network.construct(input, self._param_values, EvaluationMode.TRAINING)
+        loss_node = self._loss_function.construct(graph, target, EvaluationMode.TRAINING)
         grads_list = loss_node.get_gradients_against(
             [graph.param_nodes[key] for key in self._param_ordering]
         )

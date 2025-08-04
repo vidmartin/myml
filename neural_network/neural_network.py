@@ -2,6 +2,7 @@
 from typing import *
 from abc import ABC, abstractmethod
 import dataclasses
+import enum
 import numpy as np
 import nodes
 
@@ -13,6 +14,10 @@ class ParameterSpecification:
 class ComputationalGraph:
     output_node: nodes.TensorNode
     param_nodes: Dict[str, nodes.ConstantNode]
+
+class EvaluationMode(enum.Enum):
+    TRAINING = 0
+    INFERENCE = 1
 
 TInput = TypeVar("TInput")
 
@@ -30,9 +35,9 @@ class NeuralNetwork(ABC, Generic[TInput]):
                 for k in params if param_specs[k].shape != params[k].shape
             )
     @final
-    def construct(self, input: TInput, params: Dict[str, np.ndarray]) -> ComputationalGraph:
+    def construct(self, input: TInput, params: Dict[str, np.ndarray], mode: EvaluationMode = EvaluationMode.INFERENCE) -> ComputationalGraph:
         self.assert_params_valid(params)
-        return self._construct(input, params)
+        return self._construct(input, params, mode)
     @abstractmethod
-    def _construct(self, input: TInput, params: Dict[str, np.ndarray]) -> ComputationalGraph:
+    def _construct(self, input: TInput, params: Dict[str, np.ndarray], mode: EvaluationMode) -> ComputationalGraph:
         raise NotImplementedError()

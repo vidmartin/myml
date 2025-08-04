@@ -2,7 +2,7 @@
 from typing import *
 import numpy as np
 from elementwise import ElementwiseUnary
-from neural_network.neural_network import NeuralNetwork, ComputationalGraph
+from neural_network.neural_network import NeuralNetwork, ComputationalGraph, EvaluationMode
 import nodes
 
 class ElementwiseModule(NeuralNetwork[nodes.TensorNode]):
@@ -12,7 +12,7 @@ class ElementwiseModule(NeuralNetwork[nodes.TensorNode]):
     def get_params(self):
         return {}
     @override
-    def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray]) -> ComputationalGraph:
+    def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode) -> ComputationalGraph:
         return ComputationalGraph(
             output_node=nodes.ElementwiseNode(self._function, [input]),
             param_nodes={},

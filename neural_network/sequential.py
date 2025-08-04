@@ -1,7 +1,7 @@
 
 from typing import *
 import numpy as np
-from neural_network.neural_network import NeuralNetwork, ComputationalGraph
+from neural_network.neural_network import NeuralNetwork, ComputationalGraph, EvaluationMode
 import nodes
 
 class SequentialModule(NeuralNetwork[nodes.TensorNode]):
@@ -15,7 +15,7 @@ class SequentialModule(NeuralNetwork[nodes.TensorNode]):
             for name, param in child.get_params().items()
         }
     @override
-    def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray]) -> ComputationalGraph:
+    def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode) -> ComputationalGraph:
         output_node = input
         param_nodes: dict[str, nodes.ConstantNode] = {}
         for i, child in enumerate(self._children):
@@ -25,7 +25,7 @@ class SequentialModule(NeuralNetwork[nodes.TensorNode]):
                 for name, param in params.items()
                 if name.startswith(param_prefix)
             }
-            child_graph = child.construct(output_node, relevant_params)
+            child_graph = child.construct(output_node, relevant_params, mode)
             param_nodes = param_nodes | {
                 f"{param_prefix}{name}": param_node
                 for name, param_node in child_graph.param_nodes.items()
