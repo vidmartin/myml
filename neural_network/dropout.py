@@ -28,16 +28,15 @@ class DropoutModule(NeuralNetwork[nodes.TensorNode]):
             )
         elif mode == EvaluationMode.TRAINING:
             input_shape = input.get_shape()
-            mask = (self._rng(input_shape[-1]) >= self._dropout_rate).astype(np.float32)
+            mask = (self._rng(input_shape) >= self._dropout_rate).astype(np.float32)
             mask_node = nodes.ConstantNode(mask)
-            extended_mask_node = nodes.ExtendNode(mask_node, input_shape[:-1])
             return ComputationalGraph(
                 output_node=nodes.ElementwiseNode(
                     function=elementwise.ElementwiseScale(1.0 / (1 - self._dropout_rate)),
                     deps=[
                         nodes.ElementwiseNode(
                             function=elementwise.ElementwiseMul(2),
-                            deps=[extended_mask_node, input]
+                            deps=[mask_node, input]
                         )
                     ]
                 ),
