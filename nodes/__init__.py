@@ -13,3 +13,4 @@ from nodes.transpose_node import TransposeNode
 from nodes.wrapping_node import WrappingNode
 from nodes.avg_node import AvgNode
 from nodes.cross_entropy_logits_node import CrossEntropyLogitsNode
+from nodes.max_pool_node import MaxPoolNode
