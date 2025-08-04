@@ -3,7 +3,7 @@ from typing import *
 import numpy as np
 import nodes
 import elementwise
-from neural_network import ComputationalGraph
+from neural_network import ComputationalGraph, EvaluationMode
 from loss.loss_function import LossFunction
 
 class WeightPenalizeWrapLoss(LossFunction):
@@ -26,7 +26,7 @@ class WeightPenalizeWrapLoss(LossFunction):
         self._kind = kind
 
     @override
-    def _construct(self, graph: ComputationalGraph, target: np.ndarray) -> nodes.TensorNode:
+    def _construct(self, graph: ComputationalGraph, target: np.ndarray, mode: EvaluationMode) -> nodes.TensorNode:
         param_nodes = [
             param_node for param_name, param_node in graph.param_nodes.items()
             if self._parameter_selector(param_name)

@@ -3,7 +3,7 @@ from typing import *
 import numpy as np
 import nodes
 import elementwise
-from neural_network import ComputationalGraph
+from neural_network import ComputationalGraph, EvaluationMode
 from loss.loss_function import LossFunction
 
 class MSELoss(LossFunction):
@@ -15,7 +15,7 @@ class MSELoss(LossFunction):
     """
 
     @override
-    def _construct(self, graph: ComputationalGraph, target: np.ndarray) -> nodes.TensorNode:
+    def _construct(self, graph: ComputationalGraph, target: np.ndarray, mode: EvaluationMode) -> nodes.TensorNode:
         assert graph.output_node.get_shape() == target.shape
         target_node = nodes.ConstantNode(target)
         sq_diff_node = nodes.ElementwiseNode(

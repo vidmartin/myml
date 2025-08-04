@@ -7,6 +7,8 @@ from permutation import Permutation
 import torch
 import numpy as np
 
+# TODO: split into multiple files
+
 class NodesTestCase(unittest.TestCase):
     def setUp(self):
         self._rng = np.random.default_rng(10012002)
