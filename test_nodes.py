@@ -589,8 +589,8 @@ class NodesTestCase(unittest.TestCase):
         self.assertEqual(tuple(res_2d_torch.shape), res_2d_node.get_shape())
 
         arr_3d = np.zeros((100,10,50,50,50))
-        ker_size_3d = (13,11,7)
-        pad_3d = (4,3,1)
+        ker_size_3d = (5,4,3)
+        pad_3d = (2,1,1)
         stride_3d = (3,4,5)
 
         arr_3d_torch = torch.tensor(arr_3d)
@@ -629,8 +629,8 @@ class NodesTestCase(unittest.TestCase):
         self.assertTrue(np.allclose(res_2d_torch.detach().numpy(), res_2d_node.get_value()))
 
         arr_3d = self._rng.standard_normal((100,10,50,50,50))
-        ker_size_3d = (13,11,7)
-        pad_3d = (4,3,1)
+        ker_size_3d = (5,4,3)
+        pad_3d = (2,1,1)
         stride_3d = (3,4,5)
 
         arr_3d_torch = torch.tensor(arr_3d)
