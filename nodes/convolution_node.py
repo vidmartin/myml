@@ -73,7 +73,7 @@ class ConvolutionNode(LazyDependentNode):
         return [input_grad, None]
     @override
     def accept(self, visitor: NodeVisitor[TResult]):
-        raise NotImplementedError() # TODO: add max pool node method to visitor and call it here
+        raise NotImplementedError() # TODO: add convolution node method to visitor and call it here
     @override
     def __repr__(self):
         return f"ConvolutionNode({self._input_node}, {self._kernel_node}, {self._padding}, {self._stride})"
