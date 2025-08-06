@@ -4,9 +4,10 @@ from typing import *
 import itertools
 import functools
 import numpy as np
-from nodes import LazyDependentNode
+from nodes.lazy_dependent_node import LazyDependentNode
 from nodes.tensor_node import TensorNode
 from node_visitor.node_visitor import NodeVisitor
+import utils
 
 TResult = TypeVar("TResult")
 
@@ -50,18 +51,7 @@ class MaxPoolNode(LazyDependentNode):
     @override
     def _get_value(self):
         depval = self._deps[0].get_value()
-        depval_padded = np.full(
-            self._input_shape[:self._non_spatial_dims] \
-            + tuple(
-                v + 2 * self._padding[i]
-                for i, v in enumerate(self._input_shape[self._non_spatial_dims:])
-            ),
-            -np.inf
-        )
-        depval_padded_indexer = (slice(0, None),) * self._non_spatial_dims + tuple(
-            slice(p, -p) for p in self._padding
-        )
-        depval_padded[depval_padded_indexer] = depval
+        depval_padded = utils.pad(depval, self._padding, -np.inf)
         
         shape = self.get_shape()
         temp = np.full(shape, -np.inf)
