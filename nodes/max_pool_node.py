@@ -62,10 +62,9 @@ class MaxPoolNode(LazyDependentNode):
         temp = np.full(shape, -np.inf)
         for idx in itertools.product(*[range(k) for k in self._kernel_size]):
             indexer = (slice(0, None),) * self._non_spatial_dims + tuple(
-                slice(i, depval_padded.shape[self._non_spatial_dims + meta_i] - self._kernel_size[meta_i] + i + 1, self._stride[meta_i])
+                slice(i, i + shape[self._non_spatial_dims + meta_i] * self._stride[meta_i], self._stride[meta_i])
                 for meta_i, i in enumerate(idx)
             )
-            # TODO: ^ understand why this works (especially the +1)
             depval_padded_indexed = depval_padded[indexer]
             temp = np.maximum(temp, depval_padded_indexed)
         return temp
