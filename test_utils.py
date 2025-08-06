@@ -122,3 +122,15 @@ class UtilsTestCase(unittest.TestCase):
 
         self.assertEqual(c1.add_and_ret(3), 3)
         self.assertEqual(c2.inc_and_ret(), 5)
+
+    def test_padded_array_consistency(self):
+        arr = self._rng.random((20, 20, 20))
+
+        self.assertTrue(np.allclose(
+            utils.pad_lr(arr, (5, 5), 0.0),
+            utils.pad_r(utils.pad_l(arr, (5, 5), 0.0), (5, 5), 0.0)
+        ))
+        self.assertTrue(np.allclose(
+            utils.pad_lr(arr, (5, 5), 0.0),
+            utils.pad_l(utils.pad_r(arr, (5, 5), 0.0), (5, 5), 0.0)
+        ))

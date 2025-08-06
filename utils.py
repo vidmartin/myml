@@ -35,7 +35,39 @@ def normalize_dest_shape(src_shape: tuple[int, ...], dest_shape: tuple[int, ...]
         for v in dest_shape
     )
 
-def pad(array: np.ndarray, padding: tuple[int, ...], fill_value: float):
+def pad_l(array: np.ndarray, padding: tuple[int, ...], fill_value: float):
+    non_spatial_dims = len(array.shape) - len(padding)
+    padded_array = np.full(
+        array.shape[:non_spatial_dims] + tuple(
+            v + p for p, v in zip(
+                padding, array.shape[non_spatial_dims:]
+            )
+        ),
+        fill_value
+    )
+    padded_array_indexer = (slice(0, None),) * non_spatial_dims + tuple(
+        slice(p, None) for p in padding
+    )
+    padded_array[padded_array_indexer] = array
+    return padded_array
+
+def pad_r(array: np.ndarray, padding: tuple[int, ...], fill_value: float):
+    non_spatial_dims = len(array.shape) - len(padding)
+    padded_array = np.full(
+        array.shape[:non_spatial_dims] + tuple(
+            v + p for p, v in zip(
+                padding, array.shape[non_spatial_dims:]
+            )
+        ),
+        fill_value
+    )
+    padded_array_indexer = (slice(0, None),) * non_spatial_dims + tuple(
+        slice(0, -p) for p in padding
+    )
+    padded_array[padded_array_indexer] = array
+    return padded_array
+
+def pad_lr(array: np.ndarray, padding: tuple[int, ...], fill_value: float):
     non_spatial_dims = len(array.shape) - len(padding)
     padded_array = np.full(
         array.shape[:non_spatial_dims] + tuple(
@@ -52,6 +84,7 @@ def pad(array: np.ndarray, padding: tuple[int, ...], fill_value: float):
     return padded_array
 
 def convolution(array: np.ndarray, kernel: np.ndarray, stride: tuple[int, ...]):
+    assert len(kernel.shape) == len(stride)
     non_spatial_dims = len(array.shape) - len(kernel.shape)
 
     # TODO: assert kernel small enough
@@ -72,6 +105,11 @@ def convolution(array: np.ndarray, kernel: np.ndarray, stride: tuple[int, ...]):
         )
         result += kernel[idx] * array[array_indexer]
     return result
+
+def transposed_convolution(array: np.ndarray, kernel: np.ndarray, stride: tuple[int, ...]):
+    assert len(kernel.shape) == len(stride)
+    non_spatial_dims = len(array.shape) - len(kernel.shape)
+    pass
 
 T = TypeVar("T")
 if False:

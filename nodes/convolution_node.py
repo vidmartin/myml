@@ -49,7 +49,7 @@ class ConvolutionNode(LazyDependentNode):
     @override
     def _get_value(self):
         depval = self._input_node.get_value()
-        depval_padded = utils.pad(depval, self._padding, 0.0)
+        depval_padded = utils.pad_lr(depval, self._padding, 0.0)
         kerval = self._kernel_node.get_value()
         return utils.convolution(depval_padded, kerval, self._stride)
     @override

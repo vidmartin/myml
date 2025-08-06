@@ -51,7 +51,7 @@ class MaxPoolNode(LazyDependentNode):
     @override
     def _get_value(self):
         depval = self._deps[0].get_value()
-        depval_padded = utils.pad(depval, self._padding, -np.inf)
+        depval_padded = utils.pad_lr(depval, self._padding, -np.inf)
         
         shape = self.get_shape()
         temp = np.full(shape, -np.inf)
