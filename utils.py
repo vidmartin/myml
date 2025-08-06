@@ -54,9 +54,24 @@ def pad(array: np.ndarray, padding: tuple[int, ...], fill_value: float):
 def convolution(array: np.ndarray, kernel: np.ndarray, stride: tuple[int, ...]):
     non_spatial_dims = len(array.shape) - len(kernel.shape)
 
-    for idx in itertools.product(*[range(k) for k in kernel.shape]):
+    # TODO: assert kernel small enough
+    out_shape = array.shape[:non_spatial_dims] + tuple(
+        1 + (array.shape[non_spatial_dims + meta_i] - kernel.shape[meta_i]) // stride[meta_i]
+        for meta_i in range(len(kernel.shape))
+    )
 
-        pass
+    result = np.zeros(out_shape)
+    for idx in itertools.product(*[range(k) for k in kernel.shape]):
+        array_indexer = (slice(0, None),) * non_spatial_dims + tuple(
+            slice(
+                idx[meta_i],
+                idx[meta_i] + stride[meta_i] * out_shape[non_spatial_dims + meta_i],
+                stride[meta_i]
+            )
+            for meta_i in range(len(idx))
+        )
+        result += kernel[idx] * array[array_indexer]
+    return result
 
 T = TypeVar("T")
 if False:

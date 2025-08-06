@@ -50,14 +50,8 @@ class ConvolutionNode(LazyDependentNode):
     def _get_value(self):
         depval = self._input_node.get_value()
         depval_padded = utils.pad(depval, self._padding, 0.0)
-
         kerval = self._kernel_node.get_value()
-
-        shape = self.get_shape()
-        result = np.zeros(shape)
-        for idx in itertools.product(*[range(k) for k in self._kernel_size]):
-            pass
-        raise NotImplementedError()
+        return utils.convolution(depval_padded, kerval, self._stride)
     @override
     def _get_input_gradients(self, output_gradient: np.ndarray):
         raise NotImplementedError()
