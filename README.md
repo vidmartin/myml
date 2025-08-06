@@ -160,7 +160,7 @@ To demystify the names of the parameters -- `1.weight`, `3.weight`, etc. -- thes
 2. To determine its parameters, the `SequentialModule` calls `get_params` on each of its child modules. However, to ensure that each parameter name is unique, it prefixes these parameter names with the index of the module it comes from in the list passed to the constructor (and a period). It then also uses these prefixes to determine which parameter value is destined for which child when it's constructing the computational graph (and strips the prefixes before passing the parameters to the child).
 3. Because the `InputNumpyModule` has only one child and no parameters of its own, it doesn't have to change the parameter names in any way -- so it just forwards the parameters returned from calling `get_params` on its child.
 
-To train the network, we need some dataset. This network is actually designed to work with the Fashion MNIST dataset, which I we can get via the `torchvision` package:
+To train the network, we need some dataset. This network is actually designed to work with the Fashion MNIST dataset, which we can get via the `torchvision` package:
 
     import torchvision
     
