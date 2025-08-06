@@ -62,7 +62,8 @@ def pad_r(array: np.ndarray, padding: tuple[int, ...], fill_value: float):
         fill_value
     )
     padded_array_indexer = (slice(0, None),) * non_spatial_dims + tuple(
-        slice(0, -p) for p in padding
+        slice(0, -p) if p != 0 else slice(0, None)
+        for p in padding
     )
     padded_array[padded_array_indexer] = array
     return padded_array
@@ -78,10 +79,34 @@ def pad_lr(array: np.ndarray, padding: tuple[int, ...], fill_value: float):
         fill_value
     )
     padded_array_indexer = (slice(0, None),) * non_spatial_dims + tuple(
-        slice(p, -p) for p in padding
+        slice(p, -p) if p != 0 else slice(0, None)
+        for p in padding
     )
     padded_array[padded_array_indexer] = array
     return padded_array
+
+def unpad_l(padded_array: np.ndarray, padding: tuple[int, ...]):
+    non_spatial_dims = len(padded_array.shape) - len(padding)
+    padded_array_indexer = (slice(0, None),) * non_spatial_dims + tuple(
+        slice(p, None) for p in padding
+    )
+    return padded_array[padded_array_indexer]
+
+def unpad_r(padded_array: np.ndarray, padding: tuple[int, ...]):
+    non_spatial_dims = len(padded_array.shape) - len(padding)
+    padded_array_indexer = (slice(0, None),) * non_spatial_dims + tuple(
+        slice(0, -p) if p != 0 else slice(0, None)
+        for p in padding
+    )
+    return padded_array[padded_array_indexer]
+
+def unpad_lr(padded_array: np.ndarray, padding: tuple[int, ...]):
+    non_spatial_dims = len(padded_array.shape) - len(padding)
+    padded_array_indexer = (slice(0, None),) * non_spatial_dims + tuple(
+        slice(p, -p) if p != 0 else slice(0, None)
+        for p in padding
+    )
+    return padded_array[padded_array_indexer]
 
 def convolution(array: np.ndarray, kernel: np.ndarray, stride: tuple[int, ...]):
     assert len(kernel.shape) == len(stride)
@@ -109,7 +134,25 @@ def convolution(array: np.ndarray, kernel: np.ndarray, stride: tuple[int, ...]):
 def transposed_convolution(array: np.ndarray, kernel: np.ndarray, stride: tuple[int, ...]):
     assert len(kernel.shape) == len(stride)
     non_spatial_dims = len(array.shape) - len(kernel.shape)
-    pass
+    
+    out_shape = array.shape[:non_spatial_dims] + tuple(
+        kernel.shape[meta_i] + stride[meta_i] * (array.shape[non_spatial_dims + meta_i] - 1)
+        for meta_i in range(len(kernel.shape))
+    )
+
+    result = np.zeros(out_shape)
+    for idx in itertools.product(*[range(k) for k in kernel.shape]):
+        result_indexer = (slice(0, None),) * non_spatial_dims + tuple(
+            slice(
+                idx[meta_i],
+                idx[meta_i] + stride[meta_i] * array.shape[non_spatial_dims + meta_i],
+                stride[meta_i]
+            )
+            for meta_i in range(len(idx))
+        )
+
+        result[result_indexer] += kernel[idx] * array
+    return result
 
 T = TypeVar("T")
 if False:

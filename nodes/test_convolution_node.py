@@ -150,7 +150,7 @@ class ConvolutionNodeTestCase(unittest.TestCase):
         pad_1d = (4,)
         stride_1d = (3,)
 
-        arr_1d_torch = torch.tensor(arr_1d)
+        arr_1d_torch = torch.tensor(arr_1d, requires_grad=True)
         ker_1d_torch = torch.tensor(ker_1d)
         res_1d_torch: torch.Tensor = torch.nn.functional.conv1d(
             arr_1d_torch,
@@ -168,7 +168,7 @@ class ConvolutionNodeTestCase(unittest.TestCase):
         input_grad_1d, = res_1d_node.get_gradients_against([arr_1d_node], output_grad_1d)
         res_1d_torch.backward(torch.tensor(output_grad_1d, requires_grad=False))
 
-        self.assertTrue(np.allclose(res_1d_torch.grad.detach().numpy(), input_grad_1d))
+        self.assertTrue(np.allclose(arr_1d_torch.grad.detach().numpy(), input_grad_1d))
 
         arr_2d = self._rng.standard_normal((100,10,50,50))
         ker_size_2d = (13,11)
@@ -176,7 +176,7 @@ class ConvolutionNodeTestCase(unittest.TestCase):
         pad_2d = (4,3)
         stride_2d = (3,4)
 
-        arr_2d_torch = torch.tensor(arr_2d)
+        arr_2d_torch = torch.tensor(arr_2d, requires_grad=True)
         ker_2d_torch = torch.tensor(ker_2d)
         res_2d_torch = torch.nn.functional.conv2d(
             arr_2d_torch,
@@ -194,7 +194,7 @@ class ConvolutionNodeTestCase(unittest.TestCase):
         input_grad_2d, = res_2d_node.get_gradients_against([arr_2d_node], output_grad_2d)
         res_2d_torch.backward(torch.tensor(output_grad_2d, requires_grad=False))
 
-        self.assertTrue(np.allclose(res_2d_torch.grad.detach().numpy(), input_grad_2d))
+        self.assertTrue(np.allclose(arr_2d_torch.grad.detach().numpy(), input_grad_2d))
 
         arr_3d = self._rng.standard_normal((100,10,50,50,50))
         ker_size_3d = (5,4,3)
@@ -202,7 +202,7 @@ class ConvolutionNodeTestCase(unittest.TestCase):
         pad_3d = (2,1,1)
         stride_3d = (3,4,5)
 
-        arr_3d_torch = torch.tensor(arr_3d)
+        arr_3d_torch = torch.tensor(arr_3d, requires_grad=True)
         ker_3d_torch = torch.tensor(ker_3d)
         res_3d_torch = torch.nn.functional.conv3d(
             arr_3d_torch,
@@ -220,7 +220,7 @@ class ConvolutionNodeTestCase(unittest.TestCase):
         input_grad_3d, = res_3d_node.get_gradients_against([arr_3d_node], output_grad_3d)
         res_3d_torch.backward(torch.tensor(output_grad_3d, requires_grad=False))
 
-        self.assertTrue(np.allclose(res_3d_torch.grad.detach().numpy(), input_grad_3d))
+        self.assertTrue(np.allclose(arr_3d_torch.grad.detach().numpy(), input_grad_3d))
 
     def test_convolution_kernel_derivative(self):
         pass # TODO

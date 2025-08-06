@@ -46,7 +46,8 @@ class TensorNode(ABC):
     @final
     def get_input_gradients(self, output_gradient: np.ndarray | None = None) -> list[np.ndarray]:
         """
-        Returns "local gradients" of inputs given the gradient of the output.
+        Returns "local gradients" of inputs given the gradient of the output
+        in order corresponding to the return value of `get_direct_dependencies`.
         """
         shape = self.get_shape()
         if output_gradient is None:

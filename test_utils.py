@@ -123,6 +123,128 @@ class UtilsTestCase(unittest.TestCase):
         self.assertEqual(c1.add_and_ret(3), 3)
         self.assertEqual(c2.inc_and_ret(), 5)
 
+    def test_padding(self):
+        arr = np.array(
+            [
+                [1.0, 2.0, 3.0],
+                [4.0, 5.0, 6.0],
+                [7.0, 8.0, 9.0],
+            ]
+        )
+
+        self.assertTrue(np.allclose(utils.pad_l(arr, (0, 0), 0.0), arr))
+        self.assertTrue(np.allclose(utils.pad_r(arr, (0, 0), 0.0), arr))
+        self.assertTrue(np.allclose(utils.pad_lr(arr, (0, 0), 0.0), arr))
+
+        self.assertTrue(np.allclose(
+            utils.pad_l(arr, (1, 0), 0.0),
+            np.array(
+                [
+                    [0.0, 0.0, 0.0],
+                    [1.0, 2.0, 3.0],
+                    [4.0, 5.0, 6.0],
+                    [7.0, 8.0, 9.0],
+                ]
+            )
+        ))
+
+        self.assertTrue(np.allclose(
+            utils.pad_r(arr, (1, 0), 0.0),
+            np.array(
+                [
+                    [1.0, 2.0, 3.0],
+                    [4.0, 5.0, 6.0],
+                    [7.0, 8.0, 9.0],
+                    [0.0, 0.0, 0.0],
+                ]
+            )
+        ))
+
+        self.assertTrue(np.allclose(
+            utils.pad_lr(arr, (1, 0), 0.0),
+            np.array(
+                [
+                    [0.0, 0.0, 0.0],
+                    [1.0, 2.0, 3.0],
+                    [4.0, 5.0, 6.0],
+                    [7.0, 8.0, 9.0],
+                    [0.0, 0.0, 0.0],
+                ]
+            )
+        ))
+
+        self.assertTrue(np.allclose(
+            utils.pad_l(arr, (0, 1), 0.0),
+            np.array(
+                [
+                    [0.0, 1.0, 2.0, 3.0],
+                    [0.0, 4.0, 5.0, 6.0],
+                    [0.0, 7.0, 8.0, 9.0],
+                ]
+            )
+        ))
+
+        self.assertTrue(np.allclose(
+            utils.pad_r(arr, (0, 1), 0.0),
+            np.array(
+                [
+                    [1.0, 2.0, 3.0, 0.0],
+                    [4.0, 5.0, 6.0, 0.0],
+                    [7.0, 8.0, 9.0, 0.0],
+                ]
+            )
+        ))
+
+        self.assertTrue(np.allclose(
+            utils.pad_lr(arr, (0, 1), 0.0),
+            np.array(
+                [
+                    [0.0, 1.0, 2.0, 3.0, 0.0],
+                    [0.0, 4.0, 5.0, 6.0, 0.0],
+                    [0.0, 7.0, 8.0, 9.0, 0.0],
+                ]
+            )
+        ))
+
+        self.assertTrue(np.allclose(
+            utils.pad_lr(arr, (2, 2), 0.0),
+            np.array(
+                [
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 2.0, 3.0, 0.0, 0.0],
+                    [0.0, 0.0, 4.0, 5.0, 6.0, 0.0, 0.0],
+                    [0.0, 0.0, 7.0, 8.0, 9.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                ]
+            )
+        ))
+
+
+    def test_unpadding(self):
+        arr = np.array(
+            [
+                [1.0, 2.0, 3.0],
+                [4.0, 5.0, 6.0],
+                [7.0, 8.0, 9.0],
+            ]
+        )
+
+        self.assertTrue(np.allclose(utils.unpad_l(utils.pad_l(arr, (0, 0), 0.0), (0, 0)), arr))
+        self.assertTrue(np.allclose(utils.unpad_r(utils.pad_r(arr, (0, 0), 0.0), (0, 0)), arr))
+        self.assertTrue(np.allclose(utils.unpad_lr(utils.pad_lr(arr, (0, 0), 0.0), (0, 0)), arr))
+
+        self.assertTrue(np.allclose(utils.unpad_l(utils.pad_l(arr, (1, 0), 0.0), (1, 0)), arr))
+        self.assertTrue(np.allclose(utils.unpad_r(utils.pad_r(arr, (1, 0), 0.0), (1, 0)), arr))
+        self.assertTrue(np.allclose(utils.unpad_lr(utils.pad_lr(arr, (1, 0), 0.0), (1, 0)), arr))
+
+        self.assertTrue(np.allclose(utils.unpad_l(utils.pad_l(arr, (0, 1), 0.0), (0, 1)), arr))
+        self.assertTrue(np.allclose(utils.unpad_r(utils.pad_r(arr, (0, 1), 0.0), (0, 1)), arr))
+        self.assertTrue(np.allclose(utils.unpad_lr(utils.pad_lr(arr, (0, 1), 0.0), (0, 1)), arr))
+
+        self.assertTrue(np.allclose(utils.unpad_lr(utils.pad_lr(arr, (2, 2), 0.0), (2, 2)), arr))
+
     def test_padded_array_consistency(self):
         arr = self._rng.random((20, 20, 20))
 
