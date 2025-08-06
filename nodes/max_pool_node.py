@@ -23,19 +23,23 @@ class MaxPoolNode(LazyDependentNode):
         self._kernel_size = kernel_size
         self._padding = padding
         self._stride = stride
-        self._init_and_check_shapes()
-    def _init_and_check_shapes(self):
+
+        self._input_shape, self._non_spatial_dims = self._init_and_check_shapes()
+
+        self._max_kernel_indices: list[np.ndarray] | None = None
+    def _init_and_check_shapes(self) -> tuple[tuple[int, ...], int]:
         # TODO: maybe also ensure that padding is not too big
         assert len(self._kernel_size) == len(self._padding)
         assert len(self._kernel_size) == len(self._stride)
-        self._input_shape = self._deps[0].get_shape()
-        self._non_spatial_dims = len(self._input_shape) - len(self._kernel_size)
+        input_shape = self._deps[0].get_shape()
+        non_spatial_dims = len(self._input_shape) - len(self._kernel_size)
         assert self._non_spatial_dims >= 0, \
             f"number of dimensions of kernel with size {self._kernel_size} is too big for input of shape {input_shape}"
         assert all(
             self._input_shape[self._non_spatial_dims + i] + 2 * self._padding[i] >= self._kernel_size[i]
             for i in range(len(self._kernel_size))
         ), f"kernel of size {self._kernel_size} is too big for input of shape {self._input_shape}!"
+        return input_shape, non_spatial_dims
     @override
     def get_shape(self):
         return self._input_shape[:self._non_spatial_dims] + tuple(
@@ -66,7 +70,10 @@ class MaxPoolNode(LazyDependentNode):
                 for meta_i, i in enumerate(idx)
             )
             depval_padded_indexed = depval_padded[indexer]
-            temp = np.maximum(temp, depval_padded_indexed)
+
+            mask = depval_padded_indexed > temp
+            temp[mask] = depval_padded_indexed[mask]
+            # ^ above 2 lines are equivalent to: temp = np.maximum(temp, depval_padded_indexed)
         return temp
     @override
     def _get_input_gradients(self, output_gradient):
