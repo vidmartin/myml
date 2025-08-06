@@ -32,13 +32,13 @@ class MaxPoolNode(LazyDependentNode):
         assert len(self._kernel_size) == len(self._padding)
         assert len(self._kernel_size) == len(self._stride)
         input_shape = self._deps[0].get_shape()
-        non_spatial_dims = len(self._input_shape) - len(self._kernel_size)
-        assert self._non_spatial_dims >= 0, \
+        non_spatial_dims = len(input_shape) - len(self._kernel_size)
+        assert non_spatial_dims >= 0, \
             f"number of dimensions of kernel with size {self._kernel_size} is too big for input of shape {input_shape}"
         assert all(
-            self._input_shape[self._non_spatial_dims + i] + 2 * self._padding[i] >= self._kernel_size[i]
+            input_shape[non_spatial_dims + i] + 2 * self._padding[i] >= self._kernel_size[i]
             for i in range(len(self._kernel_size))
-        ), f"kernel of size {self._kernel_size} is too big for input of shape {self._input_shape}!"
+        ), f"kernel of size {self._kernel_size} is too big for input of shape {input_shape}!"
         return input_shape, non_spatial_dims
     @override
     def get_shape(self):
@@ -77,10 +77,10 @@ class MaxPoolNode(LazyDependentNode):
         return temp
     @override
     def _get_input_gradients(self, output_gradient):
-        return super()._get_input_gradients(output_gradient)
+        raise NotImplementedError()
     @override
     def accept(self, visitor: NodeVisitor[TResult]):
-        return super().accept(visitor)
+        raise NotImplementedError() # TODO: add max pool node method to visitor and call it here
     @override
     def __repr__(self):
         return f"MaxPoolNode({self._deps[0]}, {self._kernel_size}, {self._padding}, {self._stride})"
