@@ -15,12 +15,12 @@ The features that are already implemented:
     - $L_2$ and $L_1$ weight penalization
     - label smoothing
     - decoupled weight decay for Adam
+    - dropout
 
 ## TODO list
 
 The features currently not implemented that I intend to add:
 
-1. dropout
 2. batch normalization
 3. convolutions
 4. recurrent neural networks, LSTM
