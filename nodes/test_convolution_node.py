@@ -281,8 +281,8 @@ class ConvolutionNodeTestCase(unittest.TestCase):
         pad_3d = (2,1,1)
         stride_3d = (3,4,5)
 
-        arr_3d_torch = torch.tensor(arr_3d, requires_grad=True)
-        ker_3d_torch = torch.tensor(ker_3d)
+        arr_3d_torch = torch.tensor(arr_3d)
+        ker_3d_torch = torch.tensor(ker_3d, requires_grad=True)
         res_3d_torch = torch.nn.functional.conv3d(
             arr_3d_torch,
             torch.stack((ker_3d_torch[torch.newaxis,...],) * 10),
@@ -297,6 +297,6 @@ class ConvolutionNodeTestCase(unittest.TestCase):
 
         output_grad_3d = self._rng.standard_normal(res_3d_node.get_shape())
         ker_grad_3d, = res_3d_node.get_gradients_against([ker_3d_node], output_grad_3d)
-        res_3d_torch.backward(torch.tensor(ker_grad_3d, requires_grad=False))
+        res_3d_torch.backward(torch.tensor(output_grad_3d, requires_grad=False))
 
         self.assertTrue(np.allclose(ker_3d_torch.grad.detach().numpy(), ker_grad_3d))
