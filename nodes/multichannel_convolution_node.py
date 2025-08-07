@@ -75,19 +75,26 @@ class MultichannelConvolutionNode(LazyDependentNode):
         )
         input_grad = utils.unpad_lr(input_padded_grad, self._padding)
 
-        return [input_grad, None]
-
         ker_grad = np.zeros(kerval.shape)
-        for idx in itertools.product(*[range(k) for k in kerval.shape]):
-            indexer = (slice(0, None),) * self._non_spatial_dims + tuple(
+        for idx in itertools.product(*[range(k) for k in self._kernel_size]):
+            indexer = (slice(0, None),) * (self._non_spatial_dims + 1) + tuple(
                 slice(
                     idx[meta_i],
-                    idx[meta_i] + output_gradient.shape[self._non_spatial_dims + meta_i] * self._stride[meta_i],
+                    idx[meta_i] + output_gradient.shape[self._non_spatial_dims + meta_i + 1] * self._stride[meta_i],
                     self._stride[meta_i]
                 )
                 for meta_i in range(len(idx))
             )
-            ker_grad[idx] = (output_gradient * self._depval_padded[indexer]).sum()
+            arr = np.tensordot(
+                output_gradient, self._depval_padded[indexer],
+                axes=(
+                    tuple(i for i in range(len(output_gradient.shape)) if i != self._non_spatial_dims),
+                    tuple(i for i in range(len(output_gradient.shape)) if i != self._non_spatial_dims),
+                    # ^ non_spatial_dims is not only the number of non-spatial dimensions, but also the index of the channels dimension
+                    # essentially: for each kernel placement & point in kernel, we compute the outer product of the corresponding vectors of channel values
+                )
+            )
+            ker_grad[:,:,*idx] = arr
         
         return [input_grad, ker_grad]
     @override
