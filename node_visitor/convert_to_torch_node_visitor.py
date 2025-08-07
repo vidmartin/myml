@@ -87,3 +87,19 @@ class ConvertToTorchNodeVisitor(NodeVisitor[torch.Tensor]):
         dep_node, = node.get_direct_dependencies()
         dep_torch = dep_node.accept(self)
         return dep_torch.reshape(node._target_shape)
+    @override
+    @utils.instance_memo
+    def visit_convolution_node(self, node):
+        raise NotImplementedError() # TODO (but torch doesn't support 4d and higher-d convolutions?)
+    @override
+    @utils.instance_memo
+    def visit_max_pool_node(self, node):
+        raise NotImplementedError() # TODO (but torch doesn't support 4d and higher-d convolutions?)
+    @override
+    @utils.instance_memo
+    def visit_slice_node(self, node):
+        raise NotImplementedError() # TODO
+    @override
+    @utils.instance_memo
+    def visit_stack_node(self, node):
+        raise NotImplementedError() # TODO

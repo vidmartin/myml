@@ -45,8 +45,8 @@ class StackNode(LazyDependentNode):
             output_gradient[slicer_fn(i)] for i in range(len(self._deps))
         ]
     @override
-    def accept(self, visitor: NodeVisitor[TResult]):
-        raise NotImplementedError() # TODO: add corresponding visitor method and call it here
+    def accept(self, visitor: NodeVisitor[TResult]) -> TResult:
+        return visitor.visit_stack_node(self)
     @override
     def __repr__(self):
         return f"StackNode({self._deps}, {self._stack_dim})"

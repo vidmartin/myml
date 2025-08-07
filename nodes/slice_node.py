@@ -35,8 +35,8 @@ class SliceNode(LazyDependentNode):
         result[self._get_indexer()] = output_gradient
         return [result]
     @override
-    def accept(self, visitor: NodeVisitor[TResult]):
-        raise NotImplementedError() # TODO: add corresponding visitor method and call it here
+    def accept(self, visitor: NodeVisitor[TResult]) -> TResult:
+        return visitor.visit_slice_node(self)
     @override
     def __repr__(self):
         return f"SliceNode({self._deps[0]}, {self._slice_dim}, {self._slice_index})"

@@ -100,8 +100,8 @@ class MaxPoolNode(LazyDependentNode):
         )
         return [input_padded_grad[unpad_indexer]]
     @override
-    def accept(self, visitor: NodeVisitor[TResult]):
-        raise NotImplementedError() # TODO: add max pool node method to visitor and call it here
+    def accept(self, visitor: NodeVisitor[TResult]) -> TResult:
+        return visitor.visit_max_pool_node(self)
     @override
     def __repr__(self):
         return f"MaxPoolNode({self._deps[0]}, {self._kernel_size}, {self._padding}, {self._stride})"

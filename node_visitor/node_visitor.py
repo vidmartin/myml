@@ -42,3 +42,15 @@ class NodeVisitor(ABC, Generic[TReturn]):
     @abstractmethod
     def visit_reshape_node(self, node: nodes.ReshapeNode) -> TReturn:
         raise NotImplementedError()
+    @abstractmethod
+    def visit_convolution_node(self, node: nodes.ConvolutionNode) -> TReturn:
+        raise NotImplementedError()
+    @abstractmethod
+    def visit_max_pool_node(self, node: nodes.MaxPoolNode) -> TReturn:
+        raise NotImplementedError()
+    @abstractmethod
+    def visit_slice_node(self, node: nodes.SliceNode) -> TReturn:
+        raise NotImplementedError()
+    @abstractmethod
+    def visit_stack_node(self, node: nodes.StackNode) -> TReturn:
+        raise NotImplementedError()
