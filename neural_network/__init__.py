@@ -6,3 +6,4 @@ from neural_network.input_numpy import InputNumpyModule
 from neural_network.linear import LinearModule
 from neural_network.sequential import SequentialModule
 from neural_network.dropout import DropoutModule
+from neural_network.multichannel_convolution import MultichannelConvolutionModule
