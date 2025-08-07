@@ -32,21 +32,21 @@ class MultichannelConvolutionNode(LazyDependentNode):
         self._depval_padded: np.ndarray | None = None
     def _init_and_check_shapes(self) -> tuple[tuple[int, ...], int]:
         # TODO: maybe also ensure that padding is not too big
-        assert len(self._kernel_size) == len(self._padding)
+        assert len(self._kernel_size) == len(self._padding), f"kernel size {self._kernel_size} incompatible with padding {self._padding}"
         assert len(self._kernel_size) == len(self._stride)
         input_shape = self._deps[0].get_shape()
-        non_spatial_dims = len(input_shape) - len(self._kernel_size)
+        non_spatial_dims = len(input_shape) - len(self._kernel_size) - 1 # the -1 is the channels dimension
         assert non_spatial_dims >= 0, \
             f"number of dimensions of kernel with size {self._kernel_size} is too big for input of shape {input_shape}"
         assert all(
-            input_shape[non_spatial_dims + i] + 2 * self._padding[i] >= self._kernel_size[i]
+            input_shape[non_spatial_dims + 1 + i] + 2 * self._padding[i] >= self._kernel_size[i]
             for i in range(len(self._kernel_size))
         ), f"kernel of size {self._kernel_size} is too big for input of shape {input_shape}!"
         return input_shape, non_spatial_dims
     @override
     def get_shape(self):
-        return self._input_shape[:self._non_spatial_dims] + tuple(
-            1 + (self._input_shape[self._non_spatial_dims + i] + 2 * self._padding[i] - self._kernel_size[i]) // self._stride[i]
+        return self._input_shape[:self._non_spatial_dims] + (self._out_channels,) + tuple(
+            1 + (self._input_shape[self._non_spatial_dims + 1 + i] + 2 * self._padding[i] - self._kernel_size[i]) // self._stride[i]
             for i in range(len(self._kernel_size))
         )
     @override
@@ -55,9 +55,11 @@ class MultichannelConvolutionNode(LazyDependentNode):
         self._depval_padded = utils.pad_lr(depval, self._padding, 0.0)
         self._padded_input_shape = self._depval_padded.shape
         kerval = self._kernels_node.get_value()
-        return utils.convolution(self._depval_padded, kerval, self._stride)
+        # return utils.convolution(self._depval_padded, kerval, self._stride)
+        return utils.multichannel_convolution(self._depval_padded, kerval, self._stride)
     @override
     def _get_input_gradients(self, output_gradient: np.ndarray):
+        raise NotImplementedError()
         _val = self.get_value()
         assert self._padded_input_shape is not None
         assert self._depval_padded is not None

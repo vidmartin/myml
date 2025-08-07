@@ -154,6 +154,33 @@ def transposed_convolution(array: np.ndarray, kernel: np.ndarray, stride: tuple[
         result[result_indexer] += kernel[idx] * array
     return result
 
+def multichannel_convolution(array: np.ndarray, kernels: np.ndarray, stride: tuple[int, ...]):
+    out_channels, in_channels, *kernel_shape = kernels.shape
+    kernel_shape = tuple(kernel_shape)
+    assert len(kernel_shape) == len(stride)
+    non_spatial_dims = len(array.shape) - len(kernel_shape) - 1 # the -1 is the channels dimension
+
+    # TODO: assert kernel small enough
+    out_shape = array.shape[:non_spatial_dims] + (out_channels,) + tuple(
+        1 + (array.shape[non_spatial_dims + meta_i + 1] - kernel_shape[meta_i]) // stride[meta_i]
+        for meta_i in range(len(kernel_shape))
+    )
+
+    result = np.zeros(out_shape)
+    for idx in itertools.product(*[range(k) for k in kernel_shape]):
+        array_indexer = (slice(0, None),) * (non_spatial_dims + 1) + tuple(
+            slice(
+                idx[meta_i],
+                idx[meta_i] + stride[meta_i] * out_shape[non_spatial_dims + 1 + meta_i],
+                stride[meta_i]
+            )
+            for meta_i in range(len(idx))
+        )
+        arr = np.tensordot(array[array_indexer], kernels[:,:,*idx], ((non_spatial_dims,), (1,)))
+        arr = np.moveaxis(arr, -1, non_spatial_dims)
+        result += arr
+    return result
+
 T = TypeVar("T")
 if False:
     def instance_memo(callable_: T) -> T:

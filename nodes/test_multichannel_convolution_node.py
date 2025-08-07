@@ -69,11 +69,11 @@ class MultichannelConvolutionNodeTestCase(unittest.TestCase):
 
         arr_3d_node = nodes.ConstantNode(arr_3d)
         kers_3d_node = nodes.ConstantNode(kers_3d)
-        res_3d_node = nodes.ConvolutionNode(arr_3d_node, kers_3d_node, pad_3d, stride_3d)
+        res_3d_node = nodes.MultichannelConvolutionNode(arr_3d_node, kers_3d_node, pad_3d, stride_3d)
 
         self.assertEqual(tuple(res_3d_torch.shape), res_3d_node.get_shape())
 
-    def test_convolution_value(self):
+    def test_multichannel_convolution_value(self):
         arr_1d = self._rng.standard_normal((100,10,50))
         kers_size_1d = (11,10,13)
         kers_1d = self._rng.standard_normal(kers_size_1d)
@@ -91,7 +91,7 @@ class MultichannelConvolutionNodeTestCase(unittest.TestCase):
 
         arr_1d_node = nodes.ConstantNode(arr_1d)
         kers_1d_node = nodes.ConstantNode(kers_1d)
-        res_1d_node = nodes.ConvolutionNode(arr_1d_node, kers_1d_node, pad_1d, stride_1d)
+        res_1d_node = nodes.MultichannelConvolutionNode(arr_1d_node, kers_1d_node, pad_1d, stride_1d)
 
         self.assertTrue(np.allclose(res_1d_torch.detach().numpy(), res_1d_node.get_value()))
 
@@ -112,7 +112,7 @@ class MultichannelConvolutionNodeTestCase(unittest.TestCase):
 
         arr_2d_node = nodes.ConstantNode(arr_2d)
         kers_2d_node = nodes.ConstantNode(kers_2d)
-        res_2d_node = nodes.ConvolutionNode(arr_2d_node, kers_2d_node, pad_2d, stride_2d)
+        res_2d_node = nodes.MultichannelConvolutionNode(arr_2d_node, kers_2d_node, pad_2d, stride_2d)
 
         self.assertTrue(np.allclose(res_2d_torch.detach().numpy(), res_2d_node.get_value()))
 
@@ -133,11 +133,11 @@ class MultichannelConvolutionNodeTestCase(unittest.TestCase):
 
         arr_3d_node = nodes.ConstantNode(arr_3d)
         kers_3d_node = nodes.ConstantNode(kers_3d)
-        res_3d_node = nodes.ConvolutionNode(arr_3d_node, kers_3d_node, pad_3d, stride_3d)
+        res_3d_node = nodes.MultichannelConvolutionNode(arr_3d_node, kers_3d_node, pad_3d, stride_3d)
 
         self.assertTrue(np.allclose(res_3d_torch.detach().numpy(), res_3d_node.get_value()))
 
-    def test_convolution_input_derivative(self):
+    def test_multichannel_convolution_input_derivative(self):
         arr_1d = self._rng.standard_normal((100,10,50))
         kers_size_1d = (11,10,13,)
         kers_1d = self._rng.standard_normal(kers_size_1d)
@@ -155,7 +155,7 @@ class MultichannelConvolutionNodeTestCase(unittest.TestCase):
 
         arr_1d_node = nodes.ConstantNode(arr_1d)
         kers_1d_node = nodes.ConstantNode(kers_1d)
-        res_1d_node = nodes.ConvolutionNode(arr_1d_node, kers_1d_node, pad_1d, stride_1d)
+        res_1d_node = nodes.MultichannelConvolutionNode(arr_1d_node, kers_1d_node, pad_1d, stride_1d)
 
         output_grad_1d = self._rng.standard_normal(res_1d_node.get_shape())
         input_grad_1d, = res_1d_node.get_gradients_against([arr_1d_node], output_grad_1d)
@@ -180,7 +180,7 @@ class MultichannelConvolutionNodeTestCase(unittest.TestCase):
 
         arr_2d_node = nodes.ConstantNode(arr_2d)
         kers_2d_node = nodes.ConstantNode(kers_2d)
-        res_2d_node = nodes.ConvolutionNode(arr_2d_node, kers_2d_node, pad_2d, stride_2d)
+        res_2d_node = nodes.MultichannelConvolutionNode(arr_2d_node, kers_2d_node, pad_2d, stride_2d)
 
         output_grad_2d = self._rng.standard_normal(res_2d_node.get_shape())
         input_grad_2d, = res_2d_node.get_gradients_against([arr_2d_node], output_grad_2d)
@@ -205,7 +205,7 @@ class MultichannelConvolutionNodeTestCase(unittest.TestCase):
 
         arr_3d_node = nodes.ConstantNode(arr_3d)
         kers_3d_node = nodes.ConstantNode(kers_3d)
-        res_3d_node = nodes.ConvolutionNode(arr_3d_node, kers_3d_node, pad_3d, stride_3d)
+        res_3d_node = nodes.MultichannelConvolutionNode(arr_3d_node, kers_3d_node, pad_3d, stride_3d)
 
         output_grad_3d = self._rng.standard_normal(res_3d_node.get_shape())
         input_grad_3d, = res_3d_node.get_gradients_against([arr_3d_node], output_grad_3d)
@@ -213,7 +213,7 @@ class MultichannelConvolutionNodeTestCase(unittest.TestCase):
 
         self.assertTrue(np.allclose(arr_3d_torch.grad.detach().numpy(), input_grad_3d))
 
-    def test_convolution_kernel_derivative(self):
+    def test_multichannel_convolution_kernel_derivative(self):
         arr_1d = self._rng.standard_normal((100,10,50))
         kers_size_1d = (11,10,13,)
         kers_1d = self._rng.standard_normal(kers_size_1d)
@@ -231,7 +231,7 @@ class MultichannelConvolutionNodeTestCase(unittest.TestCase):
 
         arr_1d_node = nodes.ConstantNode(arr_1d)
         kers_1d_node = nodes.ConstantNode(kers_1d)
-        res_1d_node = nodes.ConvolutionNode(arr_1d_node, kers_1d_node, pad_1d, stride_1d)
+        res_1d_node = nodes.MultichannelConvolutionNode(arr_1d_node, kers_1d_node, pad_1d, stride_1d)
 
         output_grad_1d = self._rng.standard_normal(res_1d_node.get_shape())
         kers_grad_1d, = res_1d_node.get_gradients_against([kers_1d_node], output_grad_1d)
@@ -256,7 +256,7 @@ class MultichannelConvolutionNodeTestCase(unittest.TestCase):
 
         arr_2d_node = nodes.ConstantNode(arr_2d)
         kers_2d_node = nodes.ConstantNode(kers_2d)
-        res_2d_node = nodes.ConvolutionNode(arr_2d_node, kers_2d_node, pad_2d, stride_2d)
+        res_2d_node = nodes.MultichannelConvolutionNode(arr_2d_node, kers_2d_node, pad_2d, stride_2d)
 
         output_grad_2d = self._rng.standard_normal(res_2d_node.get_shape())
         kers_grad_2d, = res_2d_node.get_gradients_against([kers_2d_node], output_grad_2d)
@@ -281,7 +281,7 @@ class MultichannelConvolutionNodeTestCase(unittest.TestCase):
 
         arr_3d_node = nodes.ConstantNode(arr_3d)
         ker_3d_node = nodes.ConstantNode(kers_3d)
-        res_3d_node = nodes.ConvolutionNode(arr_3d_node, ker_3d_node, pad_3d, stride_3d)
+        res_3d_node = nodes.MultichannelConvolutionNode(arr_3d_node, ker_3d_node, pad_3d, stride_3d)
 
         output_grad_3d = self._rng.standard_normal(res_3d_node.get_shape())
         kers_grad_3d, = res_3d_node.get_gradients_against([ker_3d_node], output_grad_3d)
