@@ -59,13 +59,12 @@ class MultichannelConvolutionNode(LazyDependentNode):
         return utils.multichannel_convolution(self._depval_padded, kerval, self._stride)
     @override
     def _get_input_gradients(self, output_gradient: np.ndarray):
-        raise NotImplementedError()
         _val = self.get_value()
         assert self._padded_input_shape is not None
         assert self._depval_padded is not None
 
         kerval = self._kernels_node.get_value()
-        input_padded_grad_possibly_smaller = utils.transposed_convolution(output_gradient, kerval, self._stride)
+        input_padded_grad_possibly_smaller = utils.multichannel_transposed_convolution(output_gradient, kerval, self._stride)
         input_padded_grad = utils.pad_r(
             input_padded_grad_possibly_smaller,
             tuple(
@@ -75,6 +74,8 @@ class MultichannelConvolutionNode(LazyDependentNode):
             0.0
         )
         input_grad = utils.unpad_lr(input_padded_grad, self._padding)
+
+        return [input_grad, None]
 
         ker_grad = np.zeros(kerval.shape)
         for idx in itertools.product(*[range(k) for k in kerval.shape]):

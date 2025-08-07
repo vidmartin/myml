@@ -181,6 +181,33 @@ def multichannel_convolution(array: np.ndarray, kernels: np.ndarray, stride: tup
         result += arr
     return result
 
+def multichannel_transposed_convolution(array: np.ndarray, kernels: np.ndarray, stride: tuple[int, ...]):
+    out_channels, in_channels, *kernel_shape = kernels.shape
+    kernel_shape = tuple(kernel_shape)
+    assert len(kernel_shape) == len(stride)
+    non_spatial_dims = len(array.shape) - len(kernel_shape) - 1
+    
+    out_shape = array.shape[:non_spatial_dims] + (in_channels,) + tuple(
+        kernel_shape[meta_i] + stride[meta_i] * (array.shape[non_spatial_dims + meta_i + 1] - 1)
+        for meta_i in range(len(kernel_shape))
+    )
+
+    result = np.zeros(out_shape)
+    for idx in itertools.product(*[range(k) for k in kernel_shape]):
+        result_indexer = (slice(0, None),) * (non_spatial_dims + 1) + tuple(
+            slice(
+                idx[meta_i],
+                idx[meta_i] + stride[meta_i] * array.shape[non_spatial_dims + meta_i + 1],
+                stride[meta_i]
+            )
+            for meta_i in range(len(idx))
+        )
+
+        arr = np.tensordot(array, kernels[:,:,*idx], ((non_spatial_dims,), (0,)))
+        arr = np.moveaxis(arr, -1, non_spatial_dims)
+        result[result_indexer] += arr
+    return result
+
 T = TypeVar("T")
 if False:
     def instance_memo(callable_: T) -> T:
