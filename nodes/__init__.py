@@ -16,3 +16,4 @@ from nodes.cross_entropy_logits_node import CrossEntropyLogitsNode
 from nodes.max_pool_node import MaxPoolNode
 from nodes.convolution_node import ConvolutionNode
 from nodes.slice_node import SliceNode
+from nodes.stack_node import StackNode

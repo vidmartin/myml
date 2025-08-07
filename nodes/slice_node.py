@@ -2,11 +2,9 @@
 from __future__ import annotations
 from typing import *
 import numpy as np
-import itertools
 from nodes.lazy_dependent_node import LazyDependentNode
 from nodes.tensor_node import TensorNode
 from node_visitor.node_visitor import NodeVisitor
-import utils
 
 TResult = TypeVar("TResult")
 
