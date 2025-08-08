@@ -4,7 +4,6 @@ import numpy as np
 from neural_network.neural_network import NeuralNetwork, ComputationalGraph, ParameterSpecification, EvaluationMode
 import nodes
 import elementwise
-import utils
 
 # TODO: dilation
 # TODO: bias
