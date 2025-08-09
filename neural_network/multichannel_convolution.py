@@ -2,8 +2,11 @@
 from typing import *
 import numpy as np
 from neural_network.neural_network import NeuralNetwork, ComputationalGraph, ParameterSpecification, EvaluationMode
+from neural_network_visitor.neural_network_visitor import NeuralNetworkVisitor
 import nodes
 import elementwise
+
+TResult = TypeVar("TResult")
 
 # TODO: dilation
 # TODO: bias
@@ -86,3 +89,6 @@ class MultichannelConvolutionModule(NeuralNetwork[nodes.TensorNode]):
             output_node=output_node,
             param_nodes=param_nodes,
         )
+    @override
+    def accept(self, visitor: NeuralNetworkVisitor[TResult]) -> TResult:
+        return visitor.visit_multichannel_convolution(self)

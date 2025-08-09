@@ -5,6 +5,7 @@ import dataclasses
 import enum
 import numpy as np
 import nodes
+from neural_network_visitor.neural_network_visitor import NeuralNetworkVisitor
 
 @dataclasses.dataclass
 class ParameterSpecification:
@@ -20,6 +21,7 @@ class EvaluationMode(enum.Enum):
     INFERENCE = 1
 
 TInput = TypeVar("TInput")
+TResult = TypeVar("TResult")
 
 class NeuralNetwork(ABC, Generic[TInput]):
     @abstractmethod
@@ -40,4 +42,7 @@ class NeuralNetwork(ABC, Generic[TInput]):
         return self._construct(input, params, mode)
     @abstractmethod
     def _construct(self, input: TInput, params: Dict[str, np.ndarray], mode: EvaluationMode) -> ComputationalGraph:
+        raise NotImplementedError()
+    @abstractmethod
+    def accept(self, visitor: NeuralNetworkVisitor[TResult]) -> TResult:
         raise NotImplementedError()

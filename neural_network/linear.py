@@ -3,7 +3,10 @@ from typing import *
 import numpy as np
 from neural_network.neural_network import NeuralNetwork, ComputationalGraph, ParameterSpecification, EvaluationMode
 import elementwise
+from neural_network_visitor.neural_network_visitor import NeuralNetworkVisitor
 import nodes
+
+TResult = TypeVar("TResult")
 
 WEIGHT_PARAM_NAME = "weight"
 BIAS_PARAM_NAME = "bias"
@@ -35,3 +38,6 @@ class LinearModule(NeuralNetwork[nodes.TensorNode]):
                 BIAS_PARAM_NAME: bias_node,
             },
         )
+    @override
+    def accept(self, visitor: NeuralNetworkVisitor[TResult]) -> TResult:
+        return visitor.visit_linear(self)

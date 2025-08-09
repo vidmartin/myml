@@ -2,9 +2,12 @@
 from typing import *
 import numpy as np
 from neural_network.neural_network import NeuralNetwork, ComputationalGraph, ParameterSpecification, EvaluationMode
+from neural_network_visitor.neural_network_visitor import NeuralNetworkVisitor
 import nodes
 import elementwise
 import permutation
+
+TResult = TypeVar("TResult")
 
 class BatchNormModule(NeuralNetwork[nodes.TensorNode]):
     def __init__(
@@ -116,3 +119,6 @@ class BatchNormModule(NeuralNetwork[nodes.TensorNode]):
                 "beta": beta_node,
             }
         )
+    @override
+    def accept(self, visitor: NeuralNetworkVisitor[TResult]) -> TResult:
+        return visitor.visit_batch_norm(self)

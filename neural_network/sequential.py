@@ -2,7 +2,10 @@
 from typing import *
 import numpy as np
 from neural_network.neural_network import NeuralNetwork, ComputationalGraph, EvaluationMode
+from neural_network_visitor.neural_network_visitor import NeuralNetworkVisitor
 import nodes
+
+TResult = TypeVar("TResult")
 
 class SequentialModule(NeuralNetwork[nodes.TensorNode]):
     def __init__(self, children: list[NeuralNetwork[nodes.TensorNode]]):
@@ -35,3 +38,6 @@ class SequentialModule(NeuralNetwork[nodes.TensorNode]):
             output_node=output_node,
             param_nodes=param_nodes,
         )
+    @override
+    def accept(self, visitor: NeuralNetworkVisitor[TResult]) -> TResult:
+        return visitor.visit_sequential(self)
