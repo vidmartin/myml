@@ -56,7 +56,7 @@ class MultichannelConvolutionNode(LazyDependentNode):
         self._padded_input_shape = self._depval_padded.shape
         kerval = self._kernels_node.get_value()
         # return utils.convolution(self._depval_padded, kerval, self._stride)
-        return utils.multichannel_convolution(self._depval_padded, kerval, self._stride)
+        return utils.multichannel_convolution_v2(self._depval_padded, kerval, self._stride)
     @override
     def _get_input_gradients(self, output_gradient: np.ndarray):
         _val = self.get_value()
