@@ -116,7 +116,7 @@ def roll_varied(array: np.ndarray, roll_dim: int, vary_dim: int, offsets: Iterab
     offsets_desired_shape[vary_dim] = offsets_arr.shape[0]
     offsets_arr = offsets_arr.reshape(tuple(offsets_desired_shape))
 
-    print(f"{indexer[roll_dim].shape} vs. {offsets_arr.shape}")
+    # print(f"{indexer[roll_dim].shape} vs. {offsets_arr.shape}")
     indexer[roll_dim] = indexer[roll_dim] - offsets_arr
     indexer[roll_dim] %= array.shape[roll_dim]
     
@@ -185,40 +185,66 @@ def transposed_convolution(array: np.ndarray, kernel: np.ndarray, stride: tuple[
         result[result_indexer] += kernel[idx] * array
     return result
 
-def transposed_convolution_v2(array: np.ndarray, kernel: np.ndarray, stride: tuple[int, ...]):
-    assert len(kernel.shape) == len(stride)
-    non_spatial_dims = len(array.shape) - len(kernel.shape)
+# def transposed_convolution_v2(array: np.ndarray, kernel: np.ndarray, stride: tuple[int, ...]):
+#     assert len(kernel.shape) == len(stride)
+#     non_spatial_dims = len(array.shape) - len(kernel.shape)
     
-    array_interleaved = np.zeros(
-        array.shape[:non_spatial_dims] + tuple(
-            v * s + 2 * k - 1 - s for s, v, k in zip(stride, array.shape[non_spatial_dims:], kernel.shape)
-        )
-    )
-    array_interleaved_indexer = (slice(0, None),) * non_spatial_dims + tuple(
-        slice(k - 1, k - 1 + v * s, s) for s, v, k in zip(stride, array.shape[non_spatial_dims:], kernel.shape)
-    )
-    array_interleaved[array_interleaved_indexer] = array
+#     array_interleaved = np.zeros(
+#         array.shape[:non_spatial_dims] + tuple(
+#             v * s + 2 * k - 1 - s for s, v, k in zip(stride, array.shape[non_spatial_dims:], kernel.shape)
+#         )
+#     )
+#     array_interleaved_indexer = (slice(0, None),) * non_spatial_dims + tuple(
+#         slice(k - 1, k - 1 + v * s, s) for s, v, k in zip(stride, array.shape[non_spatial_dims:], kernel.shape)
+#     )
+#     array_interleaved[array_interleaved_indexer] = array
 
-    return convolution_v2(array_interleaved, np.flip(kernel), (1,) * len(stride))
+#     return convolution_v2(array_interleaved, np.flip(kernel), (1,) * len(stride))
 
-    # out_shape = array.shape[:non_spatial_dims] + tuple(
-    #     kernel.shape[meta_i] + stride[meta_i] * (array.shape[non_spatial_dims + meta_i] - 1)
-    #     for meta_i in range(len(kernel.shape))
-    # )
+#     # out_shape = array.shape[:non_spatial_dims] + tuple(
+#     #     kernel.shape[meta_i] + stride[meta_i] * (array.shape[non_spatial_dims + meta_i] - 1)
+#     #     for meta_i in range(len(kernel.shape))
+#     # )
 
-    # result = np.zeros(out_shape)
-    # view = np.lib.stride_tricks.sliding_window_view(
-    #     result, kernel.shape, tuple(non_spatial_dims + i for i in range(len(kernel.shape))),
-    #     writeable=True
-    # )
-    # view_indexer = (slice(0, None),) * non_spatial_dims + tuple(slice(0, None, s) for s in stride) + (...,)
-    # view[view_indexer] += np.tensordot(array, kernel, 0)
+#     # result = np.zeros(out_shape)
+#     # view = np.lib.stride_tricks.sliding_window_view(
+#     #     result, kernel.shape, tuple(non_spatial_dims + i for i in range(len(kernel.shape))),
+#     #     writeable=True
+#     # )
+#     # view_indexer = (slice(0, None),) * non_spatial_dims + tuple(slice(0, None, s) for s in stride) + (...,)
+#     # view[view_indexer] += np.tensordot(array, kernel, 0)
 
-    # return result
+#     # return result
+
+# def transposed_convolution_v3(array: np.ndarray, kernel: np.ndarray, stride: tuple[int, ...]):
+#     assert len(kernel.shape) == len(stride)
+#     non_spatial_dims = len(array.shape) - len(kernel.shape)
+
+#     out_shape = array.shape[:non_spatial_dims] + tuple(
+#         kernel.shape[meta_i] + stride[meta_i] * (array.shape[non_spatial_dims + meta_i] - 1)
+#         for meta_i in range(len(kernel.shape))
+#     )
+
+#     temp = np.zeros(out_shape + kernel.shape)
+#     array_indexer = (slice(0, None),) * len(array.shape) + (np.newaxis,) * len(kernel.shape)
+#     temp_indexer = \
+#         (slice(0, None),) * non_spatial_dims + \
+#         tuple(slice(0, v * s, s) for v, s in zip(array.shape[non_spatial_dims:], stride)) + \
+#         (slice(0, None),) * len(kernel.shape)
+#     temp[temp_indexer] = array[array_indexer]
+
+#     for meta_i in range(len(kernel.shape)):
+#         temp = roll_varied(
+#             temp,
+#             non_spatial_dims + meta_i,
+#             len(out_shape) + meta_i,
+#             np.arange(kernel.shape[meta_i]),
+#         )
+    
+#     return np.tensordot(temp, kernel, len(kernel.shape))
 
 TRANSPOSED_CONVOLUTION_FUNCTIONS_BY_VERSION = {
     1: transposed_convolution,
-    2: transposed_convolution_v2,
 }
 
 def multichannel_convolution(array: np.ndarray, kernels: np.ndarray, stride: tuple[int, ...]):
