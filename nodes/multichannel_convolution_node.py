@@ -18,7 +18,8 @@ class MultichannelConvolutionNode(LazyDependentNode):
         input_node: TensorNode,
         kernels_node: TensorNode,
         padding: tuple[int, ...],
-        stride: tuple[int, ...]
+        stride: tuple[int, ...],
+        multichannel_convolution_function_or_version: Callable[[np.ndarray, np.ndarray, tuple[int, ...]], np.ndarray] | int = 1,
     ):
         super().__init__([input_node, kernels_node])
         self._input_node = input_node
@@ -30,6 +31,9 @@ class MultichannelConvolutionNode(LazyDependentNode):
         self._input_shape, self._non_spatial_dims = self._init_and_check_shapes()
         self._padded_input_shape: tuple[int, ...] | None = None
         self._depval_padded: np.ndarray | None = None
+        self._multichannel_convolution_function = \
+            multichannel_convolution_function_or_version if not isinstance(multichannel_convolution_function_or_version, int) \
+            else utils.MULTICHANNEL_CONVOLUTION_FUNCTIONS_BY_VERSION[multichannel_convolution_function_or_version]
     def _init_and_check_shapes(self) -> tuple[tuple[int, ...], int]:
         # TODO: maybe also ensure that padding is not too big
         assert len(self._kernel_size) == len(self._padding), f"kernel size {self._kernel_size} incompatible with padding {self._padding}"
@@ -56,7 +60,7 @@ class MultichannelConvolutionNode(LazyDependentNode):
         self._padded_input_shape = self._depval_padded.shape
         kerval = self._kernels_node.get_value()
         # return utils.convolution(self._depval_padded, kerval, self._stride)
-        return utils.multichannel_convolution(self._depval_padded, kerval, self._stride)
+        return self._multichannel_convolution_function(self._depval_padded, kerval, self._stride)
     @override
     def _get_input_gradients(self, output_gradient: np.ndarray):
         _val = self.get_value()

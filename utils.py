@@ -143,6 +143,11 @@ def convolution_v2(array: np.ndarray, kernel: np.ndarray, stride: tuple[int, ...
     print(f"view_ shape: {view_.shape}")
     return np.tensordot(view_, kernel, len(kernel.shape))
 
+CONVOLUTION_FUNCTIONS_BY_VERSION = {
+    1: convolution,
+    2: convolution_v2,
+}
+
 def transposed_convolution(array: np.ndarray, kernel: np.ndarray, stride: tuple[int, ...]):
     assert len(kernel.shape) == len(stride)
     non_spatial_dims = len(array.shape) - len(kernel.shape)
@@ -197,6 +202,11 @@ def transposed_convolution_v2(array: np.ndarray, kernel: np.ndarray, stride: tup
 
     # return result
 
+TRANSPOSED_CONVOLUTION_FUNCTIONS_BY_VERSION = {
+    1: transposed_convolution,
+    2: transposed_convolution_v2,
+}
+
 def multichannel_convolution(array: np.ndarray, kernels: np.ndarray, stride: tuple[int, ...]):
     out_channels, in_channels, *kernel_shape = kernels.shape
     kernel_shape = tuple(kernel_shape)
@@ -241,6 +251,11 @@ def multichannel_convolution_v2(array: np.ndarray, kernels: np.ndarray, stride: 
     result = np.tensordot(view[view_indexer], kernels_, len(kernel_shape) + 1) # contract over the kernel dims as well as input channel dims
     result = np.moveaxis(result, -1, -1 - len(kernel_shape)) # move output channels dim to where it's supposed to be
     return result
+
+MULTICHANNEL_CONVOLUTION_FUNCTIONS_BY_VERSION: Dict[int, Callable[[np.ndarray, np.ndarray, tuple[int, ...]], np.ndarray]] = {
+    1: multichannel_convolution,
+    2: multichannel_convolution_v2,
+}
 
 def multichannel_transposed_convolution(array: np.ndarray, kernels: np.ndarray, stride: tuple[int, ...]):
     out_channels, in_channels, *kernel_shape = kernels.shape
