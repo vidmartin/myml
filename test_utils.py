@@ -256,3 +256,26 @@ class UtilsTestCase(unittest.TestCase):
             utils.pad_lr(arr, (5, 5), 0.0),
             utils.pad_l(utils.pad_r(arr, (5, 5), 0.0), (5, 5), 0.0)
         ))
+
+    def test_roll_varied(self):
+        arr = np.arange(25).reshape((5, 5))
+
+        out = utils.roll_varied(arr, 1, 0, (3,0,1,3,2))
+        ref = np.stack([
+            np.roll(arr[0,:], 3),
+            np.roll(arr[1,:], 0),
+            np.roll(arr[2,:], 1),
+            np.roll(arr[3,:], 3),
+            np.roll(arr[4,:], 2),
+        ])
+        self.assertTrue(np.all(out == ref), f"got {out}, wanted {ref}")
+
+        out = utils.roll_varied(arr, 0, 1, (3,0,1,3,2))
+        ref = np.stack([
+            np.roll(arr[:,0], 3),
+            np.roll(arr[:,1], 0),
+            np.roll(arr[:,2], 1),
+            np.roll(arr[:,3], 3),
+            np.roll(arr[:,4], 2),
+        ]).T
+        self.assertTrue(np.all(out == ref), f"got {out}, wanted {ref}")

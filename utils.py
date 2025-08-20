@@ -108,6 +108,20 @@ def unpad_lr(padded_array: np.ndarray, padding: tuple[int, ...]):
     )
     return padded_array[padded_array_indexer]
 
+def roll_varied(array: np.ndarray, roll_dim: int, vary_dim: int, offsets: Iterable[int]) -> np.ndarray:
+    indexer = list(np.ix_(*[np.arange(v) for v in array.shape]))
+
+    offsets_arr = np.array(list(offsets))
+    offsets_desired_shape = np.ones(len(array.shape), dtype=np.int32)
+    offsets_desired_shape[vary_dim] = offsets_arr.shape[0]
+    offsets_arr = offsets_arr.reshape(tuple(offsets_desired_shape))
+
+    print(f"{indexer[roll_dim].shape} vs. {offsets_arr.shape}")
+    indexer[roll_dim] = indexer[roll_dim] - offsets_arr
+    indexer[roll_dim] %= array.shape[roll_dim]
+    
+    return array[tuple(indexer)]
+
 def convolution(array: np.ndarray, kernel: np.ndarray, stride: tuple[int, ...]):
     assert len(kernel.shape) == len(stride)
     non_spatial_dims = len(array.shape) - len(kernel.shape)

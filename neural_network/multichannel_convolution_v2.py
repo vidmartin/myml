@@ -17,7 +17,8 @@ class MultichannelConvolutionV2Module(NeuralNetwork[nodes.TensorNode]):
         kernel_size: tuple[int, ...],
         padding: tuple[int, ...],
         stride: tuple[int, ...],
-        bias: bool = False
+        bias: bool = False,
+        multichannel_convolution_function_or_version: Callable[[np.ndarray, np.ndarray, tuple[int, ...]], np.ndarray] | int = 1,
     ):
         self._in_channels = in_channels
         self._out_channels = out_channels
@@ -25,6 +26,7 @@ class MultichannelConvolutionV2Module(NeuralNetwork[nodes.TensorNode]):
         self._padding = padding
         self._stride = stride
         self._bias = bias
+        self._multichannel_convolution_function_or_version = multichannel_convolution_function_or_version
     @override
     def get_params(self):
         kernels_dict = {
@@ -40,7 +42,7 @@ class MultichannelConvolutionV2Module(NeuralNetwork[nodes.TensorNode]):
     @override
     def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode) -> ComputationalGraph:
         kernels_node = nodes.ConstantNode(params["kernels"])
-        conv_node = nodes.MultichannelConvolutionNode(input, kernels_node, self._padding, self._stride)
+        conv_node = nodes.MultichannelConvolutionNode(input, kernels_node, self._padding, self._stride, self._multichannel_convolution_function_or_version)
         out_shape = conv_node.get_shape()
         non_spatial_dims = len(out_shape) - len(self._kernel_size) - 1
         if not self._bias:
