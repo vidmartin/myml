@@ -294,6 +294,44 @@ class MultichannelConvolutionNodeCommonTests(ABC):
 
         self.assertTrue(np.allclose(kers_3d_torch.grad.detach().numpy(), kers_grad_3d))
 
+    def test_nested_convolution(self):
+        arr_2d = self._rng.standard_normal((10, 1, 100, 100))
+        ker1 = self._rng.standard_normal((10, 1, 10, 10))
+        ker2 = self._rng.standard_normal((10, 10, 6, 6))
+        ker3 = self._rng.standard_normal((20, 10, 3, 3))
+        out_grad = self._rng.standard_normal((10, 20, 19, 19))
+
+        arr_2d_torch = torch.tensor(arr_2d, requires_grad=True)
+        ker1_torch, ker2_torch, ker3_torch = [
+            torch.tensor(ker, requires_grad=True)
+            for ker in (ker1, ker2, ker3)
+        ]
+
+        temp1_torch = torch.nn.functional.conv2d(arr_2d_torch, ker1_torch, stride=2)
+        temp2_torch = torch.nn.functional.conv2d(temp1_torch, ker2_torch, stride=2)
+        temp3_torch = torch.nn.functional.conv2d(temp2_torch, ker3_torch, stride=1)
+
+        temp3_torch.backward(torch.tensor(out_grad, requires_grad=False))
+
+        arr_2d_node = nodes.ConstantNode(arr_2d)
+        ker1_node, ker2_node, ker3_node = [
+            nodes.ConstantNode(ker)
+            for ker in (ker1, ker2, ker3)
+        ]
+
+        temp1_node = nodes.MultichannelConvolutionNode(arr_2d_node, ker1_node, (0, 0), (2, 2))
+        temp2_node = nodes.MultichannelConvolutionNode(temp1_node, ker2_node, (0, 0), (2, 2))
+        temp3_node = nodes.MultichannelConvolutionNode(temp2_node, ker3_node, (0, 0), (1, 1))
+
+        arr_2d_grad, ker1_grad, ker2_grad, ker3_grad = temp3_node.get_gradients_against(
+            [arr_2d_node, ker1_node, ker2_node, ker3_node], out_grad
+        )
+
+        self.assertTrue(np.allclose(temp3_torch.detach().numpy(), temp3_node.get_value()))
+        self.assertTrue(np.allclose(ker3_torch.grad.detach().numpy(), ker3_grad))
+        self.assertTrue(np.allclose(ker2_torch.grad.detach().numpy(), ker2_grad))
+        self.assertTrue(np.allclose(ker1_torch.grad.detach().numpy(), ker1_grad))
+        self.assertTrue(np.allclose(arr_2d_torch.grad.detach().numpy(), arr_2d_grad))
 
 class MultichannelConvolutionNodeV1TestCase(MultichannelConvolutionNodeCommonTests, unittest.TestCase):
     @override
