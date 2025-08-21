@@ -103,3 +103,7 @@ class ConvertToTorchNodeVisitor(NodeVisitor[torch.Tensor]):
     @utils.instance_memo
     def visit_stack_node(self, node):
         raise NotImplementedError() # TODO
+    @override
+    @utils.instance_memo
+    def visit_multichannel_convolution_node(self, node):
+        raise NotImplementedError() # TODO

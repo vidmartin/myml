@@ -1,8 +1,9 @@
 
 from __future__ import annotations
 from typing import *
-import numpy as np
+import time
 import itertools
+import numpy as np
 from nodes.lazy_dependent_node import LazyDependentNode
 from nodes.tensor_node import TensorNode
 from node_visitor.node_visitor import NodeVisitor
@@ -34,6 +35,11 @@ class MultichannelConvolutionNode(LazyDependentNode):
         self._multichannel_convolution_function = \
             multichannel_convolution_function_or_version if not isinstance(multichannel_convolution_function_or_version, int) \
             else utils.MULTICHANNEL_CONVOLUTION_FUNCTIONS_BY_VERSION[multichannel_convolution_function_or_version]
+        
+        self._time_forward: float | None = None
+        self._time_backward_input: float | None = None
+        self._time_backward_kernel: float | None = None
+        # TODO: ^ remove
     def _init_and_check_shapes(self) -> tuple[tuple[int, ...], int]:
         # TODO: maybe also ensure that padding is not too big
         assert len(self._kernel_size) == len(self._padding), f"kernel size {self._kernel_size} incompatible with padding {self._padding}"
@@ -56,11 +62,16 @@ class MultichannelConvolutionNode(LazyDependentNode):
     @override
     def _get_value(self):
         depval = self._input_node.get_value()
+
+        t0 = time.time() # TODO: remove
         self._depval_padded = utils.pad_lr(depval, self._padding, 0.0)
         self._padded_input_shape = self._depval_padded.shape
         kerval = self._kernels_node.get_value()
         # return utils.convolution(self._depval_padded, kerval, self._stride)
-        return self._multichannel_convolution_function(self._depval_padded, kerval, self._stride)
+        result = self._multichannel_convolution_function(self._depval_padded, kerval, self._stride)
+
+        self._time_forward = time.time() - t0 # TODO: remove
+        return result
     @override
     def _get_input_gradients(self, output_gradient: np.ndarray):
         _val = self.get_value()
@@ -68,6 +79,8 @@ class MultichannelConvolutionNode(LazyDependentNode):
         assert self._depval_padded is not None
 
         kerval = self._kernels_node.get_value()
+
+        t0 = time.time() # TODO: remove
         input_padded_grad_possibly_smaller = utils.multichannel_transposed_convolution(output_gradient, kerval, self._stride)
         input_padded_grad = utils.pad_r(
             input_padded_grad_possibly_smaller,
@@ -78,7 +91,9 @@ class MultichannelConvolutionNode(LazyDependentNode):
             0.0
         )
         input_grad = utils.unpad_lr(input_padded_grad, self._padding)
+        self._time_backward_input = time.time() - t0 # TODO: remove
 
+        t0 = time.time() # TODO: remove
         ker_grad = np.zeros(kerval.shape)
         for idx in itertools.product(*[range(k) for k in self._kernel_size]):
             indexer = (slice(0, None),) * (self._non_spatial_dims + 1) + tuple(
@@ -99,11 +114,12 @@ class MultichannelConvolutionNode(LazyDependentNode):
                 )
             )
             ker_grad[:,:,*idx] = arr
+        self._time_backward_kernel = time.time() - t0 # TODO: remove
         
         return [input_grad, ker_grad]
     @override
     def accept(self, visitor: NodeVisitor[TResult]) -> TResult:
-        return visitor.visit_convolution_node(self)
+        return visitor.visit_multichannel_convolution_node(self)
     @override
     def __repr__(self):
-        return f"ConvolutionNode({self._input_node}, {self._kernels_node}, {self._padding}, {self._stride})"
+        return f"MultichannelConvolutionNode({self._input_node}, {self._kernels_node}, {self._padding}, {self._stride})"
