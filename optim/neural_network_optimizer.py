@@ -29,6 +29,13 @@ class NeuralNetworkOptimizer(ABC, Generic[TInput]):
         self._loss_function = loss_function
         self._param_values = init_params
         self._param_ordering = list(self._neural_network.get_params().keys())
+    def get_model(self) -> NeuralNetwork:
+        return self._neural_network
+    def get_loss_function(self) -> LossFunction:
+        return self._loss_function
+    def get_param_values(self) -> Dict[str, np.ndarray]:
+        return self._param_values
+    
     def step(self, input: TInput, target: np.ndarray) -> OptimizationStepRelevantInfo:
         """
         Computes the loss and its gradients with respect to parameters and
