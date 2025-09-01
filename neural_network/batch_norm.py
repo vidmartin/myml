@@ -9,6 +9,9 @@ import permutation
 
 TResult = TypeVar("TResult")
 
+GAMMA_PARAM_NAME = "weight"
+BETA_PARAM_NAME = "bias"
+
 class BatchNormModule(NeuralNetwork[nodes.TensorNode]):
     def __init__(
         self,
@@ -30,8 +33,8 @@ class BatchNormModule(NeuralNetwork[nodes.TensorNode]):
         if not self._learnable_affine:
             return {}
         return {
-            "gamma": ParameterSpecification((self._n_features,)),
-            "beta": ParameterSpecification((self._n_features,))
+            GAMMA_PARAM_NAME: ParameterSpecification((self._n_features,)),
+            BETA_PARAM_NAME: ParameterSpecification((self._n_features,))
         }
     @override
     def _construct(self, input_node: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode) -> ComputationalGraph:
@@ -86,8 +89,8 @@ class BatchNormModule(NeuralNetwork[nodes.TensorNode]):
                 param_nodes={}
             )
         
-        gamma_node = nodes.ConstantNode(params["gamma"])
-        beta_node = nodes.ConstantNode(params["beta"])
+        gamma_node = nodes.ConstantNode(params[GAMMA_PARAM_NAME])
+        beta_node = nodes.ConstantNode(params[BETA_PARAM_NAME])
         multiplier_node = nodes.TransposeNode(
             nodes.ExtendNode(
                 gamma_node,
@@ -115,8 +118,8 @@ class BatchNormModule(NeuralNetwork[nodes.TensorNode]):
                 ]
             ),
             param_nodes={
-                "gamma": gamma_node,
-                "beta": beta_node,
+                GAMMA_PARAM_NAME: gamma_node,
+                BETA_PARAM_NAME: beta_node,
             }
         )
     @override

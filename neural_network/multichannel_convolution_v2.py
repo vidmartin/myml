@@ -9,6 +9,9 @@ import permutation
 
 TResult = TypeVar("TResult")
 
+KERNELS_PARAM_NAME = "weight"
+BIAS_PARAM_NAME = "bias"
+
 class MultichannelConvolutionV2Module(NeuralNetwork[nodes.TensorNode]):
     def __init__(
         self,
@@ -30,28 +33,28 @@ class MultichannelConvolutionV2Module(NeuralNetwork[nodes.TensorNode]):
     @override
     def get_params(self):
         kernels_dict = {
-            "kernels": ParameterSpecification(
+            KERNELS_PARAM_NAME: ParameterSpecification(
                 (self._out_channels, self._in_channels, *self._kernel_size)
             )
         }
         if self._bias:
             return kernels_dict | {
-                "bias": ParameterSpecification((self._out_channels,))
+                BIAS_PARAM_NAME: ParameterSpecification((self._out_channels,))
             }
         return kernels_dict
     @override
     def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode) -> ComputationalGraph:
-        kernels_node = nodes.ConstantNode(params["kernels"])
+        kernels_node = nodes.ConstantNode(params[KERNELS_PARAM_NAME])
         conv_node = nodes.MultichannelConvolutionNode(input, kernels_node, self._padding, self._stride, self._multichannel_convolution_function_or_version)
         out_shape = conv_node.get_shape()
         non_spatial_dims = len(out_shape) - len(self._kernel_size) - 1
         if not self._bias:
             return ComputationalGraph(
                 output_node=conv_node,
-                param_nodes={ "kernels": kernels_node }
+                param_nodes={ KERNELS_PARAM_NAME: kernels_node }
             )
 
-        bias_node = nodes.ConstantNode(params["bias"])
+        bias_node = nodes.ConstantNode(params[BIAS_PARAM_NAME])
         return ComputationalGraph(
             output_node=nodes.ElementwiseNode(
                 elementwise.ElementwiseAdd(2), [
@@ -69,8 +72,8 @@ class MultichannelConvolutionV2Module(NeuralNetwork[nodes.TensorNode]):
                 ]
             ),
             param_nodes={
-                "kernels": kernels_node,
-                "bias": bias_node,
+                KERNELS_PARAM_NAME: kernels_node,
+                BIAS_PARAM_NAME: bias_node,
             }
         )
     @override
