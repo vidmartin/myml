@@ -9,6 +9,8 @@ else:
     try: import torch
     except: pass
 
+# TODO: shuffling!
+
 class PytorchDatasetDataloader(Dataloader):
     def __init__(self, dataset: torch.utils.data.Dataset, batch_size: int):
         self._dataset = dataset

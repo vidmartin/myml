@@ -4,6 +4,8 @@ import numpy as np
 from data_utils.dataset import Dataset
 from data_utils.dataloader import Dataloader
 
+# TODO: shuffling!
+
 class DatasetDataloader(Dataloader):
     def __init__(self, dataset: Dataset, batch_size: int):
         self._dataset = dataset
