@@ -27,7 +27,7 @@ def default_batch_callback(batch_info: BatchInfo):
     print(f"\r   batch {batch_info.batch_index + 1}/{batch_info.total_batches}, loss: {batch_info.loss:.3f}", end="")
 
 def default_epoch_callback(epoch_info: EpochInfo):
-    print(f"Epoch {epoch_info.epoch_index + 1}: {', '.join(met.get_name() + f'={val:.3f}' for met, val in epoch_info.eval_result.metric_values.items())}")
+    print(f"\rEpoch {epoch_info.epoch_index + 1}: {', '.join(met.get_name() + f'={val:.3f}' for met, val in epoch_info.eval_result.metric_values.items())}")
     return EpochCallbackResponse.CONTINUE
 
 class TrainingLoop:
@@ -56,7 +56,8 @@ class TrainingLoop:
                 )
             eval_result = self._evaluator.evaluate(
                 self._optimizer.get_model(),
-                self._optimizer.get_param_values()
+                self._optimizer.get_param_values(),
+                self._dataloader
             )
             epoch_callback_response = self._epoch_callback(
                 EpochInfo(i, eval_result)

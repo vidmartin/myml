@@ -27,7 +27,7 @@ class NeuralNetworkOptimizer(ABC, Generic[TInput]):
         neural_network.assert_params_valid(init_params)
         self._neural_network = neural_network
         self._loss_function = loss_function
-        self._param_values = init_params
+        self._param_values = { k: v for k, v in init_params.items() } # we copy to prevent modifying dict by reference
         self._param_ordering = list(self._neural_network.get_params().keys())
     def get_model(self) -> NeuralNetwork:
         return self._neural_network
