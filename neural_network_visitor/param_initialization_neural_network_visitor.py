@@ -3,7 +3,10 @@ from typing import *
 import numpy as np
 from neural_network_visitor.neural_network_visitor import NeuralNetworkVisitor
 from neural_network.neural_network import ParameterSpecification
-import neural_network
+import neural_network.batch_norm
+import neural_network.linear
+import neural_network.multichannel_convolution
+import neural_network.multichannel_convolution_v2
 
 class ParamInitializationNeuralNetworkVisitor(NeuralNetworkVisitor[Dict[str, np.ndarray]]):
     def __init__(
@@ -26,11 +29,18 @@ class ParamInitializationNeuralNetworkVisitor(NeuralNetworkVisitor[Dict[str, np.
     @override
     def visit_batch_norm(self, module: neural_network.BatchNormModule):
         params = module.get_params()
-        gamma_spec, beta_spec = [params[s] for s in ("gamma", "beta")]
+        gamma_spec, beta_spec = [
+            params[s] for s in (
+                neural_network.batch_norm.GAMMA_PARAM_NAME,
+                neural_network.batch_norm.BETA_PARAM_NAME,
+            )
+        ]
         return {
-            "gamma": np.ones(gamma_spec.shape) \
+            neural_network.batch_norm.GAMMA_PARAM_NAME: \
+                np.ones(gamma_spec.shape) \
                 if self._batch_norm_gamma is None else self._batch_norm_gamma(gamma_spec),
-            "beta": np.zeros(beta_spec.shape) \
+            neural_network.batch_norm.BETA_PARAM_NAME: \
+                np.zeros(beta_spec.shape) \
                 if self._batch_norm_beta is None else self._batch_norm_beta(beta_spec),
         }
     @override
@@ -48,31 +58,38 @@ class ParamInitializationNeuralNetworkVisitor(NeuralNetworkVisitor[Dict[str, np.
     @override
     def visit_linear(self, module: neural_network.LinearModule):
         params = module.get_params()
-        weight_spec, bias_spec = [params[s] for s in ("weight", "bias")]
+        weight_spec, bias_spec = [
+            params[s] for s in (
+                neural_network.linear.WEIGHT_PARAM_NAME,
+                neural_network.linear.BIAS_PARAM_NAME,
+            )
+        ]
         return {
-            "weight": (self._rng.random(weight_spec.shape) * 2 - 1) * (6.0 / sum(weight_spec.shape)) ** 0.5 \
+            neural_network.linear.WEIGHT_PARAM_NAME: \
+                (self._rng.random(weight_spec.shape) * 2 - 1) * (6.0 / sum(weight_spec.shape)) ** 0.5 \
                 if self._linear_weight is None else self._linear_weight(weight_spec),
-            "bias": np.zeros(bias_spec.shape) \
+            neural_network.linear.BIAS_PARAM_NAME: \
+                np.zeros(bias_spec.shape) \
                 if self._linear_bias is None else self._linear_bias(bias_spec)
         }
     @override
     def visit_multichannel_convolution(self, module: neural_network.MultichannelConvolutionModule):
-        params = module.get_params()
-        kernels_spec, bias_spec = [params[s] for s in ("kernels", "bias")]
-        return {
-            "kernels": (self._rng.random(kernels_spec.shape) * 2 - 1) * (6.0 / sum(kernels_spec.shape)) ** 0.5 \
-                if self._multichannel_convolution_kernels is None else self._multichannel_convolution_kernels(kernels_spec),
-            "bias": np.zeros(bias_spec.shape) \
-                if self._multichannel_convolution_bias is None else self._multichannel_convolution_bias(bias_spec)
-        }
+        raise NotImplementedError()
     @override
     def visit_multichannel_convolution_v2(self, module: neural_network.MultichannelConvolutionV2Module):
         params = module.get_params()
-        kernels_spec, bias_spec = [params[s] for s in ("kernels", "bias")]
+        kernels_spec, bias_spec = [
+            params[s] for s in (
+                neural_network.multichannel_convolution_v2.KERNELS_PARAM_NAME,
+                neural_network.multichannel_convolution_v2.BIAS_PARAM_NAME,
+            )
+        ]
         return {
-            "kernels": (self._rng.random(kernels_spec.shape) * 2 - 1) * (6.0 / sum(kernels_spec.shape)) ** 0.5 \
+            neural_network.multichannel_convolution_v2.KERNELS_PARAM_NAME: \
+                (self._rng.random(kernels_spec.shape) * 2 - 1) * (6.0 / sum(kernels_spec.shape)) ** 0.5 \
                 if self._multichannel_convolution_kernels is None else self._multichannel_convolution_kernels(kernels_spec),
-            "bias": np.zeros(bias_spec.shape) \
+            neural_network.multichannel_convolution_v2.BIAS_PARAM_NAME: \
+                np.zeros(bias_spec.shape) \
                 if self._multichannel_convolution_bias is None else self._multichannel_convolution_bias(bias_spec)
         }
     @override
