@@ -15,5 +15,7 @@ class Metric(ABC, Generic[T]):
     def process_batch(self, vars: T, features: np.ndarray, outputs: np.ndarray, targets: np.ndarray) -> T:
         raise NotImplementedError()
     @abstractmethod
-    def get_result(self, vars: T) -> Any:
+    def get_result(self, vars: T) -> float:
         raise NotImplementedError()
+    def format_result(self, result: float) -> str:
+        return f"{result:.3f}"

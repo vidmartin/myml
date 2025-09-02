@@ -27,3 +27,6 @@ class AccuracyMetric(Metric[AccuracyMetricVars]):
     @override
     def get_result(self, vars):
         return vars.n_samples_correct / vars.n_samples_total
+    @override
+    def format_result(self, result: float):
+        return f"{result:.2%}"

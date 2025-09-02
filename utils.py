@@ -5,6 +5,11 @@ import functools
 import itertools
 import numpy as np
 
+def preview_array(arr: np.ndarray):
+    # np.set_printoptions(precision=4, suppress=True)
+    indexer = (slice(0, 5),) * len(arr.shape)
+    return arr[indexer]
+
 def one_hot_encode(arr: np.ndarray, n_classes: int):
     ret = np.zeros(arr.shape + (n_classes,), dtype=np.float32)
 

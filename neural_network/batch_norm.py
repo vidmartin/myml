@@ -51,7 +51,7 @@ class BatchNormModule(NeuralNetwork[nodes.TensorNode]):
             sigma_sq = ((input_val - mu[mu_newaxes]) ** 2).mean(tuple(i for i in range(len(input_shape)) if i != feature_dim_index))
             
             self._mu_ma = (1 - self._rho) * self._mu_ma + self._rho * mu
-            self._sigma_sq_ma = (1 - self._rho) * self._sigma_sq_ma + self._rho * sigma_sq
+            self._sigma_sq_ma = (1 - self._rho) * self._sigma_sq_ma + self._rho * sigma_sq # TODO: this should use unbiased estimator of variance instead (unlike other parts)
 
         std_offset_node = nodes.TransposeNode(
             nodes.ExtendNode(

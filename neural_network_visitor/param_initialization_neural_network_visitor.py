@@ -12,6 +12,7 @@ class ParamInitializationNeuralNetworkVisitor(NeuralNetworkVisitor[Dict[str, np.
     def __init__(
         self,
         rng: np.random.Generator,
+        dtype: np.dtype,
         linear_weight: Callable[[ParameterSpecification], np.ndarray] | None = None,
         linear_bias: Callable[[ParameterSpecification], np.ndarray] | None = None,
         multichannel_convolution_kernels: Callable[[ParameterSpecification], np.ndarray] | None = None,
@@ -20,6 +21,7 @@ class ParamInitializationNeuralNetworkVisitor(NeuralNetworkVisitor[Dict[str, np.
         batch_norm_beta: Callable[[ParameterSpecification], np.ndarray] | None = None,
     ):
         self._rng = rng
+        self._dtype = dtype
         self._linear_weight = linear_weight
         self._linear_bias = linear_bias
         self._multichannel_convolution_kernels = multichannel_convolution_kernels
@@ -28,6 +30,8 @@ class ParamInitializationNeuralNetworkVisitor(NeuralNetworkVisitor[Dict[str, np.
         self._batch_norm_beta = batch_norm_beta
     @override
     def visit_batch_norm(self, module: neural_network.BatchNormModule):
+        if not module._learnable_affine:
+            return {}
         params = module.get_params()
         gamma_spec, beta_spec = [
             params[s] for s in (
@@ -37,10 +41,10 @@ class ParamInitializationNeuralNetworkVisitor(NeuralNetworkVisitor[Dict[str, np.
         ]
         return {
             neural_network.batch_norm.GAMMA_PARAM_NAME: \
-                np.ones(gamma_spec.shape) \
+                np.ones(gamma_spec.shape, dtype=self._dtype) \
                 if self._batch_norm_gamma is None else self._batch_norm_gamma(gamma_spec),
             neural_network.batch_norm.BETA_PARAM_NAME: \
-                np.zeros(beta_spec.shape) \
+                np.zeros(beta_spec.shape, dtype=self._dtype) \
                 if self._batch_norm_beta is None else self._batch_norm_beta(beta_spec),
         }
     @override
@@ -66,10 +70,10 @@ class ParamInitializationNeuralNetworkVisitor(NeuralNetworkVisitor[Dict[str, np.
         ]
         return {
             neural_network.linear.WEIGHT_PARAM_NAME: \
-                (self._rng.random(weight_spec.shape) * 2 - 1) * (6.0 / sum(weight_spec.shape)) ** 0.5 \
+                (self._rng.random(weight_spec.shape, dtype=self._dtype) * 2 - 1) * (6.0 / sum(weight_spec.shape)) ** 0.5 \
                 if self._linear_weight is None else self._linear_weight(weight_spec),
             neural_network.linear.BIAS_PARAM_NAME: \
-                np.zeros(bias_spec.shape) \
+                np.zeros(bias_spec.shape, dtype=self._dtype) \
                 if self._linear_bias is None else self._linear_bias(bias_spec)
         }
     @override
@@ -86,10 +90,10 @@ class ParamInitializationNeuralNetworkVisitor(NeuralNetworkVisitor[Dict[str, np.
         ]
         return {
             neural_network.multichannel_convolution_v2.KERNELS_PARAM_NAME: \
-                (self._rng.random(kernels_spec.shape) * 2 - 1) * (6.0 / sum(kernels_spec.shape)) ** 0.5 \
+                (self._rng.random(kernels_spec.shape, dtype=self._dtype) * 2 - 1) * (6.0 / sum(kernels_spec.shape)) ** 0.5 \
                 if self._multichannel_convolution_kernels is None else self._multichannel_convolution_kernels(kernels_spec),
             neural_network.multichannel_convolution_v2.BIAS_PARAM_NAME: \
-                np.zeros(bias_spec.shape) \
+                np.zeros(bias_spec.shape, dtype=self._dtype) \
                 if self._multichannel_convolution_bias is None else self._multichannel_convolution_bias(bias_spec)
         }
     @override

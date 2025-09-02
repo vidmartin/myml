@@ -6,7 +6,7 @@ import numpy as np
 import torch
 import nodes
 from neural_network.neural_network import EvaluationMode
-from neural_network.multichannel_convolution_v2 import MultichannelConvolutionV2Module
+from neural_network.multichannel_convolution_v2 import MultichannelConvolutionV2Module, KERNELS_PARAM_NAME, BIAS_PARAM_NAME
 
 class MultichannelConvolutionV2TestCase(unittest.TestCase):
     def setUp(self):
@@ -30,11 +30,11 @@ class MultichannelConvolutionV2TestCase(unittest.TestCase):
         input_node = nodes.ConstantNode(input_arr)
         graph = my_conv2d.construct(
             input=input_node,
-            params={ "kernels": kernel_arrs },
+            params={ KERNELS_PARAM_NAME: kernel_arrs },
             mode=EvaluationMode.TRAINING
         )
         sum_node = nodes.SumNode(graph.output_node, 4)
-        kernels_grad, = sum_node.get_gradients_against([graph.param_nodes["kernels"]])
+        kernels_grad, = sum_node.get_gradients_against([graph.param_nodes[KERNELS_PARAM_NAME]])
 
         self.assertTrue(np.allclose(output_torch.detach().numpy(), graph.output_node.get_value()))
         self.assertTrue(np.allclose(
@@ -62,11 +62,11 @@ class MultichannelConvolutionV2TestCase(unittest.TestCase):
         input_node = nodes.ConstantNode(input_arr)
         graph = my_conv2d.construct(
             input=input_node,
-            params={ "kernels": kernel_arrs, "bias": bias_arr },
+            params={ KERNELS_PARAM_NAME: kernel_arrs, BIAS_PARAM_NAME: bias_arr },
             mode=EvaluationMode.TRAINING
         )
         sum_node = nodes.SumNode(graph.output_node, 4)
-        kernels_grad, = sum_node.get_gradients_against([graph.param_nodes["kernels"]])
+        kernels_grad, = sum_node.get_gradients_against([graph.param_nodes[KERNELS_PARAM_NAME]])
 
         self.assertTrue(np.allclose(output_torch.detach().numpy(), graph.output_node.get_value()))
         self.assertTrue(np.allclose(
@@ -74,5 +74,5 @@ class MultichannelConvolutionV2TestCase(unittest.TestCase):
             torch_conv2d.get_parameter("weight").grad.detach().numpy()
         ))
 
-        bias_node_grad, = sum_node.get_gradients_against([graph.param_nodes["bias"]])
+        bias_node_grad, = sum_node.get_gradients_against([graph.param_nodes[BIAS_PARAM_NAME]])
         self.assertTrue(np.allclose(bias_node_grad, torch_conv2d.get_parameter("bias").grad.detach().numpy(), atol=0.001))
