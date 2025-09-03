@@ -1,5 +1,6 @@
 
 from typing import *
+import functools
 import numpy as np
 from neural_network.neural_network import NeuralNetwork, ComputationalGraph, ParameterSpecification, EvaluationMode
 from neural_network_visitor.neural_network_visitor import NeuralNetworkVisitor
@@ -36,22 +37,34 @@ class BatchNormModule(NeuralNetwork[nodes.TensorNode]):
             GAMMA_PARAM_NAME: ParameterSpecification((self._n_features,)),
             BETA_PARAM_NAME: ParameterSpecification((self._n_features,))
         }
+    def _get_feature_dim_index_and_other_axes(self, input_shape: tuple[int, ...]):
+        """Returns a tuple `(feature_dim_index, other_axes)`, where `other_axes` is a tuple like `(0, 1, ..., feature_dim_index - 1, feature_dim_index + 1, ..., len(input_shape))`."""
+        feature_dim_index = len(input_shape) - self._spatial_dims - 1
+        other_axes = tuple(i for i in range(len(input_shape)) if i != feature_dim_index)
+        return feature_dim_index, other_axes
+        pass
+    def _update_moving_averages(self, input_shape: tuple[int, ...], mu: np.ndarray, proto_sigma_sq: np.ndarray):
+        feature_dim_index, other_axes = self._get_feature_dim_index_and_other_axes(input_shape)
+        self._mu_ma = (1 - self._rho) * self._mu_ma + self._rho * mu
+        sigma_sq_divisor = functools.reduce(lambda x, y: x * y, [input_shape[i] for i in other_axes], 1) - 1
+        sigma_sq_unbiased = proto_sigma_sq.sum(other_axes) / sigma_sq_divisor
+        self._sigma_sq_ma = (1 - self._rho) * self._sigma_sq_ma + self._rho * sigma_sq_unbiased
     @override
     def _construct(self, input_node: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode) -> ComputationalGraph:
         input_shape = input_node.get_shape()
-        feature_dim_index = len(input_shape) - self._spatial_dims - 1
+        feature_dim_index, other_axes = self._get_feature_dim_index_and_other_axes(input_shape)
         if mode == EvaluationMode.INFERENCE:
             mu = self._mu_ma
             sigma_sq = self._sigma_sq_ma
         elif mode == EvaluationMode.TRAINING:
             input_val = input_node.get_value()
             
-            mu = input_val.mean(tuple(i for i in range(len(input_shape)) if i != feature_dim_index))
+            mu = input_val.mean(other_axes)
             mu_newaxes = (np.newaxis,) * feature_dim_index + (slice(0, None),) + (np.newaxis,) * self._spatial_dims
-            sigma_sq = ((input_val - mu[mu_newaxes]) ** 2).mean(tuple(i for i in range(len(input_shape)) if i != feature_dim_index))
-            
-            self._mu_ma = (1 - self._rho) * self._mu_ma + self._rho * mu
-            self._sigma_sq_ma = (1 - self._rho) * self._sigma_sq_ma + self._rho * sigma_sq # TODO: this should use unbiased estimator of variance instead (unlike other parts)
+            proto_sigma_sq = (input_val - mu[mu_newaxes]) ** 2
+            sigma_sq = proto_sigma_sq.mean(other_axes)
+
+            self._update_moving_averages(input_shape, mu, proto_sigma_sq)
 
         std_offset_node = nodes.TransposeNode(
             nodes.ExtendNode(

@@ -197,3 +197,5 @@ class BatchNormTestCase(unittest.TestCase):
             X_grad,
             atol=0.01
         ))
+
+# TODO: test inference
