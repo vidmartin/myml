@@ -54,28 +54,65 @@ class BatchNormModule(NeuralNetwork[nodes.TensorNode]):
         input_shape = input_node.get_shape()
         feature_dim_index, other_axes = self._get_feature_dim_index_and_other_axes(input_shape)
         if mode == EvaluationMode.INFERENCE:
-            mu = self._mu_ma
-            sigma_sq = self._sigma_sq_ma
+            mu_node = nodes.ConstantNode(self._mu_ma)
+            sigma_sq = nodes.ConstantNode(self._sigma_sq_ma)
         elif mode == EvaluationMode.TRAINING:
             input_val = input_node.get_value()
-            
-            mu = input_val.mean(other_axes)
-            mu_newaxes = (np.newaxis,) * feature_dim_index + (slice(0, None),) + (np.newaxis,) * self._spatial_dims
-            proto_sigma_sq = (input_val - mu[mu_newaxes]) ** 2
-            sigma_sq = proto_sigma_sq.mean(other_axes)
 
-            self._update_moving_averages(input_shape, mu, proto_sigma_sq)
+            mu_node = nodes.AvgNode(
+                nodes.TransposeNode(input_node, permutation.Permutation.bring_to_back((feature_dim_index,), len(input_shape))),
+                len(input_shape) - 1
+            )
+            mu_node_extended = nodes.TransposeNode(
+                nodes.ExtendNode(mu_node, tuple(input_shape[a] for a in other_axes)),
+                permutation.Permutation.bring_to_back((feature_dim_index,), len(input_shape)).inverse()
+            )
+            proto_sigma_sq_node = nodes.ElementwiseNode(
+                elementwise.ElementwiseIPow(2), [
+                    nodes.ElementwiseNode(
+                        elementwise.ElementwiseAdd(2), [
+                            input_node,
+                            nodes.ElementwiseNode(
+                                elementwise.ElementwiseScale(-1.0), [
+                                    mu_node_extended
+                                ]
+                            )
+                        ]
+                    )
+                ]
+            )
+            sigma_sq_node = nodes.AvgNode(
+                nodes.TransposeNode(proto_sigma_sq_node, permutation.Permutation.bring_to_back((feature_dim_index,), len(input_shape))),
+                len(input_shape) - 1,
+            ) # computing arithmetic average i.e. we have biased estimate of variance
+
+            self._update_moving_averages(input_shape, mu_node.get_value(), proto_sigma_sq_node.get_value())
 
         std_offset_node = nodes.TransposeNode(
             nodes.ExtendNode(
-                nodes.ConstantNode(-mu),
+                nodes.ElementwiseNode(
+                    elementwise.ElementwiseScale(-1.0),
+                    [mu_node],
+                ),
                 input_shape[:feature_dim_index] + input_shape[(feature_dim_index + 1):]
             ),
             permutation.Permutation.bring_to_back((feature_dim_index,), len(input_shape)).inverse()
         )
         std_divide_node = nodes.TransposeNode(
             nodes.ExtendNode(
-                nodes.ConstantNode((sigma_sq + self._delta) ** 0.5),
+                nodes.ElementwiseNode(
+                    elementwise.ElementwiseFPow(0.5), [
+                        nodes.ElementwiseNode(
+                            elementwise.ElementwiseAdd(2), [
+                                sigma_sq_node,
+                                nodes.ExtendNode(
+                                    nodes.ConstantNode(np.array(self._delta)),
+                                    sigma_sq_node.get_shape()
+                                )
+                            ]
+                        )
+                    ]
+                ),
                 input_shape[:feature_dim_index] + input_shape[(feature_dim_index + 1):]
             ),
             permutation.Permutation.bring_to_back((feature_dim_index,), len(input_shape)).inverse()
@@ -89,7 +126,7 @@ class BatchNormModule(NeuralNetwork[nodes.TensorNode]):
                     ]
                 ),
                 nodes.ElementwiseNode(
-                    elementwise.ElementwisePow(-1), [
+                    elementwise.ElementwiseIPow(-1), [
                         std_divide_node
                     ]
                 )

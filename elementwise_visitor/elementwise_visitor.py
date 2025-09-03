@@ -22,7 +22,10 @@ class ElementwiseVisitor(ABC, Generic[TReturn]):
     def visit_cos(self, obj: elementwise.ElementwiseCos) -> TReturn:
         raise NotImplementedError()
     @abstractmethod
-    def visit_pow(self, obj: elementwise.ElementwisePow) -> TReturn:
+    def visit_ipow(self, obj: elementwise.ElementwiseIPow) -> TReturn:
+        raise NotImplementedError()
+    @abstractmethod
+    def visit_fpow(self, obj: elementwise.ElementwiseFPow) -> TReturn:
         raise NotImplementedError()
     @abstractmethod
     def visit_abs(self, obj: elementwise.ElementwiseAbs) -> TReturn:

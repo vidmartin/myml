@@ -126,7 +126,7 @@ class ElementwiseCos(ElementwiseUnary):
         return visitor.visit_cos(self)
 
 @dataclasses.dataclass
-class ElementwisePow(ElementwiseUnary):
+class ElementwiseIPow(ElementwiseUnary):
     power: int
 
     @override
@@ -138,7 +138,24 @@ class ElementwisePow(ElementwiseUnary):
     
     @override
     def accept(self, visitor):
-        return visitor.visit_pow(self)
+        return visitor.visit_ipow(self)
+    
+@dataclasses.dataclass
+class ElementwiseFPow(ElementwiseUnary):
+    power: float
+
+    @override
+    def _evaluate_unary_function(self, input):
+        return input ** self.power
+    @override
+    def _evaluate_unary_derivative(self, input):
+        return self.power * input ** (self.power - 1)
+    
+    @override
+    def accept(self, visitor):
+        return visitor.visit_fpow(self)
+    
+# CONSIDER: merge IPow & FPow into one, it's annoying like this and benefit is questionable
     
 @dataclasses.dataclass
 class ElementwiseAbs(ElementwiseUnary):

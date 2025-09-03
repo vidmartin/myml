@@ -42,7 +42,7 @@ class WeightPenalizeWrapLoss(LossFunction):
         elif self._kind == "l2":
             penalizing_nodes = [
                 nodes.ElementwiseNode(
-                    elementwise.ElementwisePow(2), [node]
+                    elementwise.ElementwiseIPow(2), [node]
                 ) for node in param_nodes
             ]
         else:

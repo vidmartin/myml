@@ -30,7 +30,11 @@ class ConvertToTorchElementwiseVisitor(ElementwiseVisitor):
         dep, = self._deps
         return torch.cos(dep)
     @override
-    def visit_pow(self, obj):
+    def visit_ipow(self, obj):
+        dep, = self._deps
+        return dep ** obj.power
+    @override
+    def visit_fpow(self, obj):
         dep, = self._deps
         return dep ** obj.power
     @override
