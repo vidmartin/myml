@@ -55,7 +55,7 @@ class BatchNormModule(NeuralNetwork[nodes.TensorNode]):
         feature_dim_index, other_axes = self._get_feature_dim_index_and_other_axes(input_shape)
         if mode == EvaluationMode.INFERENCE:
             mu_node = nodes.ConstantNode(self._mu_ma)
-            sigma_sq = nodes.ConstantNode(self._sigma_sq_ma)
+            sigma_sq_node = nodes.ConstantNode(self._sigma_sq_ma)
         elif mode == EvaluationMode.TRAINING:
             input_val = input_node.get_value()
 

@@ -198,4 +198,53 @@ class BatchNormTestCase(unittest.TestCase):
             atol=0.01
         ))
 
-# TODO: test inference
+    def test_batch_norm_2d_inference(self):
+        X_trains = [
+            self._rng.standard_normal((64,10,20,20), dtype=np.float32)
+            for _ in range(10)
+        ]
+        X_test = self._rng.standard_normal((64,10,20,20), dtype=np.float32)
+        init_beta = self._rng.standard_normal((10,), dtype=np.float32)
+        init_gamma = self._rng.standard_normal((10,), dtype=np.float32)
+
+        
+        batch_norm_torch_module = torch.nn.BatchNorm2d(10)
+        batch_norm_torch_module.train()
+        batch_norm_torch_module.get_parameter("weight").data = torch.tensor(init_gamma)
+        batch_norm_torch_module.get_parameter("bias").data = torch.tensor(init_beta)
+        for X in X_trains:
+            X_torch = torch.tensor(X, requires_grad=True)
+            y_torch: torch.Tensor = batch_norm_torch_module(X_torch)
+
+        batch_norm_my_module = BatchNormModule(10, 2)
+        for X in X_trains:
+            X_node = nodes.ConstantNode(X)
+            graph = batch_norm_my_module.construct(
+                input=X_node,
+                params={
+                    BETA_PARAM_NAME: init_beta,
+                    GAMMA_PARAM_NAME: init_gamma
+                },
+                mode=EvaluationMode.TRAINING,
+            )
+        
+        batch_norm_torch_module.eval()
+        X_test_torch = torch.tensor(X_test, requires_grad=False)
+        y_test_torch = batch_norm_torch_module(X_test_torch)
+
+        X_test_node = nodes.ConstantNode(X_test)
+        graph_test = batch_norm_my_module.construct(
+            input=X_test_node,
+            params={
+                BETA_PARAM_NAME: init_beta,
+                GAMMA_PARAM_NAME: init_gamma
+            },
+            mode=EvaluationMode.INFERENCE,
+        )
+        y_test_node = graph_test.output_node
+
+        self.assertTrue(np.allclose(
+            y_test_torch.detach().numpy(),
+            y_test_node.get_value(),
+            atol=0.001
+        ))
