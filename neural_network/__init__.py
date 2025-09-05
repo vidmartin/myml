@@ -9,3 +9,4 @@ from neural_network.dropout import DropoutModule
 from neural_network.multichannel_convolution import MultichannelConvolutionModule
 from neural_network.multichannel_convolution_v2 import MultichannelConvolutionV2Module
 from neural_network.batch_norm import BatchNormModule
+from neural_network.batch_norm_v2 import BatchNormV2Module
