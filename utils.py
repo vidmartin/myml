@@ -6,7 +6,7 @@ import itertools
 import numpy as np
 
 def preview_array(arr: np.ndarray):
-    # np.set_printoptions(precision=4, suppress=True)
+    np.set_printoptions(precision=4, suppress=True)
     indexer = (slice(0, 5),) * len(arr.shape)
     return arr[indexer]
 
