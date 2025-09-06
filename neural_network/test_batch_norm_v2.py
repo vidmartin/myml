@@ -200,10 +200,10 @@ class BatchNormV2TestCase(unittest.TestCase):
 
     def test_batch_norm_2d_inference(self):
         X_trains = [
-            self._rng.standard_normal((64,10,20,20), dtype=np.float32)
+            self._rng.standard_normal((64,10,20,20), dtype=np.float32) + 1.0
             for _ in range(10)
         ]
-        X_test = self._rng.standard_normal((64,10,20,20), dtype=np.float32)
+        X_test = self._rng.standard_normal((64,10,20,20), dtype=np.float32) + 1.0
         init_beta = self._rng.standard_normal((10,), dtype=np.float32)
         init_gamma = self._rng.standard_normal((10,), dtype=np.float32)
 

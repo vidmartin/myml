@@ -27,7 +27,7 @@ class BatchNormModule(NeuralNetwork[nodes.TensorNode]):
         self._rho = rho
         self._delta = delta
         self._mu_ma = np.zeros(n_features)
-        self._sigma_sq_ma = np.zeros(n_features)
+        self._sigma_sq_ma = np.ones(n_features)
         self._learnable_affine = learnable_affine
     @override
     def get_params(self):
