@@ -64,4 +64,4 @@ class BatchNormNode(LazyDependentNode):
     
     @override
     def accept(self, visitor: NodeVisitor[TResult]) -> TResult:
-        raise NotImplementedError()
+        return visitor.visit_batch_norm_node(self)

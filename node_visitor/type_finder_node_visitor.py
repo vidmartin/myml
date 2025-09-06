@@ -75,3 +75,7 @@ class TypeFinderNodeVisitor(NodeVisitor[set[T]], Generic[T]):
     def visit_multichannel_convolution_node(self, node: nodes.MultichannelConvolutionNode) -> set[T]:
         temp = { node } if self._target_type is nodes.MultichannelConvolutionNode else set()
         return temp | self._inspect_deps(node)
+    @override
+    def visit_batch_norm_node(self, node: nodes.BatchNormNode) -> set[T]:
+        temp = { node } if self._target_type is nodes.BatchNormNode else set()
+        return temp | self._inspect_deps(node)

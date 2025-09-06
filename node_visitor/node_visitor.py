@@ -57,3 +57,6 @@ class NodeVisitor(ABC, Generic[TReturn]):
     @abstractmethod
     def visit_multichannel_convolution_node(self, node: nodes.MultichannelConvolutionNode) -> TReturn:
         raise NotImplementedError()
+    @abstractmethod
+    def visit_batch_norm_node(self, node: nodes.BatchNormNode) -> TReturn:
+        raise NotImplementedError()
