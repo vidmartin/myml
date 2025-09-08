@@ -40,6 +40,13 @@ def normalize_dest_shape(src_shape: tuple[int, ...], dest_shape: tuple[int, ...]
         for v in dest_shape
     )
 
+def ravel_dims(arr: np.ndarray, dims: Iterable[int]) -> np.ndarray:
+    dims = tuple(dims)
+    dims_set = set(dims)
+    other_dims = tuple(a for a in range(len(arr.shape)) if a not in dims_set)
+    arr_t = np.transpose(arr, other_dims + dims)
+    return arr_t.reshape(arr_t.shape[:len(other_dims)] + (-1,))
+
 def pad_l(array: np.ndarray, padding: tuple[int, ...], fill_value: float):
     non_spatial_dims = len(array.shape) - len(padding)
     padded_array = np.full(
@@ -160,7 +167,6 @@ def convolution_v2(array: np.ndarray, kernel: np.ndarray, stride: tuple[int, ...
     )
     view_indexer = (slice(0, None),) * non_spatial_dims + tuple(slice(0, None, s) for s in stride) + (...,)
     view_ = view[view_indexer]
-    print(f"view_ shape: {view_.shape}")
     return np.tensordot(view_, kernel, len(kernel.shape))
 # TODO: ^ delete?
 
@@ -216,6 +222,69 @@ def transposed_convolution_v2(array: np.ndarray, kernel: np.ndarray, stride: tup
     array_indexer = (slice(0, None),) * len(array.shape) + (np.newaxis,) * len(kernel.shape)
     np.add.at(result_view_, (slice(0, None),) * len(result_view_.shape), array[array_indexer] * kernel)
     return result
+# TODO: ^ delete?
+
+def transposed_convolution_v3(array: np.ndarray, kernel: np.ndarray, stride: tuple[int, ...]):
+    assert len(kernel.shape) == len(stride)
+    non_spatial_dims = len(array.shape) - len(kernel.shape)
+
+    out_shape = array.shape[:non_spatial_dims] + tuple(
+        kernel.shape[meta_i] + stride[meta_i] * (array.shape[non_spatial_dims + meta_i] - 1)
+        for meta_i in range(len(kernel.shape))
+    )
+
+    ker_ = np.zeros(tuple(
+        (kernel.shape[meta_i] + stride[meta_i] - 1) // stride[meta_i] * stride[meta_i]
+        for meta_i in range(len(kernel.shape))
+    ))
+    indexer = tuple(slice(0, kernel.shape[meta_i]) for meta_i in range(len(kernel.shape)))
+    ker_[indexer] = kernel
+
+    mini_kernel_shape = tuple(
+        ker_.shape[meta_i] // stride[meta_i]
+        for meta_i in range(len(kernel.shape))
+    )
+    multi_kernel = np.zeros(mini_kernel_shape + stride)
+    for idx in itertools.product(*[range(s) for s in stride]):
+        indexer = tuple(slice(idx[meta_i], None, stride[meta_i]) for meta_i in range(len(kernel.shape)))
+        multi_kernel[(slice(0, None),) * len(mini_kernel_shape) + idx] = np.flip(ker_[indexer])
+
+    array_ = np.zeros(
+        array.shape[:non_spatial_dims] + tuple(
+            2 * (mini_kernel_shape[meta_i] - 1) + array.shape[non_spatial_dims + meta_i]
+            for meta_i in range(len(kernel.shape))
+        )
+    )
+    indexer = (slice(0, None),) * non_spatial_dims + tuple(
+        slice(mini_kernel_shape[meta_i] - 1, mini_kernel_shape[meta_i] - 1 + array.shape[non_spatial_dims + meta_i])
+        for meta_i in range(len(kernel.shape))
+    )
+    array_[indexer] = array
+
+    view = np.lib.stride_tricks.sliding_window_view(
+        array_, mini_kernel_shape,
+        tuple(non_spatial_dims + meta_i for meta_i in range(len(kernel.shape)))
+    )
+    res: np.ndarray = np.tensordot(view, multi_kernel, len(kernel.shape))
+
+    res = res.transpose(
+        tuple(range(non_spatial_dims)) + tuple(
+            non_spatial_dims + meta_i + d * len(kernel.shape)
+            for meta_i in range(len(kernel.shape))
+            for d in (0, 1)
+        )
+    ) # transpose so that spatial dimension index and corresponding "minikernel index" are next to each other
+    # so that reshape does the right thing
+
+    res = res.reshape(
+        array.shape[:non_spatial_dims] + tuple(
+            stride[meta_i] * (array.shape[non_spatial_dims + meta_i] + mini_kernel_shape[meta_i] - 1)
+            for meta_i in range(len(kernel.shape))
+        )
+    )
+
+    indexer = tuple(slice(0, out_shape[meta_i]) for meta_i in range(len(array.shape)))
+    return res[indexer]
 # TODO: ^ delete?
 
 TRANSPOSED_CONVOLUTION_FUNCTIONS_BY_VERSION = {
