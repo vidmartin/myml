@@ -13,6 +13,9 @@ class MultichannelConvolutionNodeCommonTests(ABC):
     @abstractmethod
     def get_multichannel_convolution_version(self) -> int:
         raise NotImplementedError()
+    @abstractmethod
+    def get_tranposed_multichannel_convolution_version(self) -> int:
+        raise NotImplementedError()
 
     def test_multichannel_convolution_shape(self):
         arr_1d = np.zeros((100,10,50))
@@ -32,7 +35,11 @@ class MultichannelConvolutionNodeCommonTests(ABC):
 
         arr_1d_node = nodes.ConstantNode(arr_1d)
         kers_1d_node = nodes.ConstantNode(kers_1d)
-        res_1d_node = nodes.MultichannelConvolutionNode(arr_1d_node, kers_1d_node, pad_1d, stride_1d, self.get_multichannel_convolution_version())
+        res_1d_node = nodes.MultichannelConvolutionNode(
+            arr_1d_node, kers_1d_node, pad_1d, stride_1d,
+            self.get_multichannel_convolution_version(),
+            self.get_tranposed_multichannel_convolution_version(),
+        )
 
         self.assertEqual(tuple(res_1d_torch.shape), res_1d_node.get_shape())
 
@@ -53,7 +60,11 @@ class MultichannelConvolutionNodeCommonTests(ABC):
 
         arr_2d_node = nodes.ConstantNode(arr_2d)
         kers_2d_node = nodes.ConstantNode(kers_2d)
-        res_2d_node = nodes.MultichannelConvolutionNode(arr_2d_node, kers_2d_node, pad_2d, stride_2d, self.get_multichannel_convolution_version())
+        res_2d_node = nodes.MultichannelConvolutionNode(
+            arr_2d_node, kers_2d_node, pad_2d, stride_2d,
+            self.get_multichannel_convolution_version(),
+            self.get_tranposed_multichannel_convolution_version(),
+        )
 
         self.assertEqual(tuple(res_2d_torch.shape), res_2d_node.get_shape())
 
@@ -74,7 +85,11 @@ class MultichannelConvolutionNodeCommonTests(ABC):
 
         arr_3d_node = nodes.ConstantNode(arr_3d)
         kers_3d_node = nodes.ConstantNode(kers_3d)
-        res_3d_node = nodes.MultichannelConvolutionNode(arr_3d_node, kers_3d_node, pad_3d, stride_3d, self.get_multichannel_convolution_version())
+        res_3d_node = nodes.MultichannelConvolutionNode(
+            arr_3d_node, kers_3d_node, pad_3d, stride_3d,
+            self.get_multichannel_convolution_version(),
+            self.get_tranposed_multichannel_convolution_version(),
+        )
 
         self.assertEqual(tuple(res_3d_torch.shape), res_3d_node.get_shape())
 
@@ -96,7 +111,11 @@ class MultichannelConvolutionNodeCommonTests(ABC):
 
         arr_1d_node = nodes.ConstantNode(arr_1d)
         kers_1d_node = nodes.ConstantNode(kers_1d)
-        res_1d_node = nodes.MultichannelConvolutionNode(arr_1d_node, kers_1d_node, pad_1d, stride_1d, self.get_multichannel_convolution_version())
+        res_1d_node = nodes.MultichannelConvolutionNode(
+            arr_1d_node, kers_1d_node, pad_1d, stride_1d,
+            self.get_multichannel_convolution_version(),
+            self.get_tranposed_multichannel_convolution_version(),
+        )
 
         self.assertTrue(np.allclose(res_1d_torch.detach().numpy(), res_1d_node.get_value()))
 
@@ -117,7 +136,11 @@ class MultichannelConvolutionNodeCommonTests(ABC):
 
         arr_2d_node = nodes.ConstantNode(arr_2d)
         kers_2d_node = nodes.ConstantNode(kers_2d)
-        res_2d_node = nodes.MultichannelConvolutionNode(arr_2d_node, kers_2d_node, pad_2d, stride_2d, self.get_multichannel_convolution_version())
+        res_2d_node = nodes.MultichannelConvolutionNode(
+            arr_2d_node, kers_2d_node, pad_2d, stride_2d,
+            self.get_multichannel_convolution_version(),
+            self.get_tranposed_multichannel_convolution_version()
+        )
 
         self.assertTrue(np.allclose(res_2d_torch.detach().numpy(), res_2d_node.get_value()))
 
@@ -138,7 +161,11 @@ class MultichannelConvolutionNodeCommonTests(ABC):
 
         arr_3d_node = nodes.ConstantNode(arr_3d)
         kers_3d_node = nodes.ConstantNode(kers_3d)
-        res_3d_node = nodes.MultichannelConvolutionNode(arr_3d_node, kers_3d_node, pad_3d, stride_3d, self.get_multichannel_convolution_version())
+        res_3d_node = nodes.MultichannelConvolutionNode(
+            arr_3d_node, kers_3d_node, pad_3d, stride_3d,
+            self.get_multichannel_convolution_version(),
+            self.get_tranposed_multichannel_convolution_version(),
+        )
 
         self.assertTrue(np.allclose(res_3d_torch.detach().numpy(), res_3d_node.get_value()))
 
@@ -160,7 +187,11 @@ class MultichannelConvolutionNodeCommonTests(ABC):
 
         arr_1d_node = nodes.ConstantNode(arr_1d)
         kers_1d_node = nodes.ConstantNode(kers_1d)
-        res_1d_node = nodes.MultichannelConvolutionNode(arr_1d_node, kers_1d_node, pad_1d, stride_1d, self.get_multichannel_convolution_version())
+        res_1d_node = nodes.MultichannelConvolutionNode(
+            arr_1d_node, kers_1d_node, pad_1d, stride_1d,
+            self.get_multichannel_convolution_version(),
+            self.get_tranposed_multichannel_convolution_version(),
+        )
 
         output_grad_1d = self._rng.standard_normal(res_1d_node.get_shape())
         input_grad_1d, = res_1d_node.get_gradients_against([arr_1d_node], output_grad_1d)
@@ -185,7 +216,11 @@ class MultichannelConvolutionNodeCommonTests(ABC):
 
         arr_2d_node = nodes.ConstantNode(arr_2d)
         kers_2d_node = nodes.ConstantNode(kers_2d)
-        res_2d_node = nodes.MultichannelConvolutionNode(arr_2d_node, kers_2d_node, pad_2d, stride_2d, self.get_multichannel_convolution_version())
+        res_2d_node = nodes.MultichannelConvolutionNode(
+            arr_2d_node, kers_2d_node, pad_2d, stride_2d,
+            self.get_multichannel_convolution_version(),
+            self.get_tranposed_multichannel_convolution_version(),
+        )
 
         output_grad_2d = self._rng.standard_normal(res_2d_node.get_shape())
         input_grad_2d, = res_2d_node.get_gradients_against([arr_2d_node], output_grad_2d)
@@ -210,7 +245,11 @@ class MultichannelConvolutionNodeCommonTests(ABC):
 
         arr_3d_node = nodes.ConstantNode(arr_3d)
         kers_3d_node = nodes.ConstantNode(kers_3d)
-        res_3d_node = nodes.MultichannelConvolutionNode(arr_3d_node, kers_3d_node, pad_3d, stride_3d, self.get_multichannel_convolution_version())
+        res_3d_node = nodes.MultichannelConvolutionNode(
+            arr_3d_node, kers_3d_node, pad_3d, stride_3d,
+            self.get_multichannel_convolution_version(),
+            self.get_tranposed_multichannel_convolution_version(),
+        )
 
         output_grad_3d = self._rng.standard_normal(res_3d_node.get_shape())
         input_grad_3d, = res_3d_node.get_gradients_against([arr_3d_node], output_grad_3d)
@@ -236,7 +275,11 @@ class MultichannelConvolutionNodeCommonTests(ABC):
 
         arr_1d_node = nodes.ConstantNode(arr_1d)
         kers_1d_node = nodes.ConstantNode(kers_1d)
-        res_1d_node = nodes.MultichannelConvolutionNode(arr_1d_node, kers_1d_node, pad_1d, stride_1d, self.get_multichannel_convolution_version())
+        res_1d_node = nodes.MultichannelConvolutionNode(
+            arr_1d_node, kers_1d_node, pad_1d, stride_1d,
+            self.get_multichannel_convolution_version(),
+            self.get_tranposed_multichannel_convolution_version(),
+        )
 
         output_grad_1d = self._rng.standard_normal(res_1d_node.get_shape())
         kers_grad_1d, = res_1d_node.get_gradients_against([kers_1d_node], output_grad_1d)
@@ -261,7 +304,11 @@ class MultichannelConvolutionNodeCommonTests(ABC):
 
         arr_2d_node = nodes.ConstantNode(arr_2d)
         kers_2d_node = nodes.ConstantNode(kers_2d)
-        res_2d_node = nodes.MultichannelConvolutionNode(arr_2d_node, kers_2d_node, pad_2d, stride_2d, self.get_multichannel_convolution_version())
+        res_2d_node = nodes.MultichannelConvolutionNode(
+            arr_2d_node, kers_2d_node, pad_2d, stride_2d,
+            self.get_multichannel_convolution_version(),
+            self.get_tranposed_multichannel_convolution_version(),
+        )
 
         output_grad_2d = self._rng.standard_normal(res_2d_node.get_shape())
         kers_grad_2d, = res_2d_node.get_gradients_against([kers_2d_node], output_grad_2d)
@@ -286,7 +333,11 @@ class MultichannelConvolutionNodeCommonTests(ABC):
 
         arr_3d_node = nodes.ConstantNode(arr_3d)
         ker_3d_node = nodes.ConstantNode(kers_3d)
-        res_3d_node = nodes.MultichannelConvolutionNode(arr_3d_node, ker_3d_node, pad_3d, stride_3d, self.get_multichannel_convolution_version())
+        res_3d_node = nodes.MultichannelConvolutionNode(
+            arr_3d_node, ker_3d_node, pad_3d, stride_3d,
+            self.get_multichannel_convolution_version(),
+            self.get_tranposed_multichannel_convolution_version(),
+        )
 
         output_grad_3d = self._rng.standard_normal(res_3d_node.get_shape())
         kers_grad_3d, = res_3d_node.get_gradients_against([ker_3d_node], output_grad_3d)
@@ -319,9 +370,21 @@ class MultichannelConvolutionNodeCommonTests(ABC):
             for ker in (ker1, ker2, ker3)
         ]
 
-        temp1_node = nodes.MultichannelConvolutionNode(arr_2d_node, ker1_node, (0, 0), (2, 2))
-        temp2_node = nodes.MultichannelConvolutionNode(temp1_node, ker2_node, (0, 0), (2, 2))
-        temp3_node = nodes.MultichannelConvolutionNode(temp2_node, ker3_node, (0, 0), (1, 1))
+        temp1_node = nodes.MultichannelConvolutionNode(
+            arr_2d_node, ker1_node, (0, 0), (2, 2),
+            self.get_multichannel_convolution_version(),
+            self.get_tranposed_multichannel_convolution_version(),
+        )
+        temp2_node = nodes.MultichannelConvolutionNode(
+            temp1_node, ker2_node, (0, 0), (2, 2),
+            self.get_multichannel_convolution_version(),
+            self.get_tranposed_multichannel_convolution_version(),
+        )
+        temp3_node = nodes.MultichannelConvolutionNode(
+            temp2_node, ker3_node, (0, 0), (1, 1),
+            self.get_multichannel_convolution_version(),
+            self.get_tranposed_multichannel_convolution_version(),
+        )
 
         arr_2d_grad, ker1_grad, ker2_grad, ker3_grad = temp3_node.get_gradients_against(
             [arr_2d_node, ker1_node, ker2_node, ker3_node], out_grad
@@ -333,12 +396,34 @@ class MultichannelConvolutionNodeCommonTests(ABC):
         self.assertTrue(np.allclose(ker1_torch.grad.detach().numpy(), ker1_grad))
         self.assertTrue(np.allclose(arr_2d_torch.grad.detach().numpy(), arr_2d_grad))
 
-class MultichannelConvolutionNodeV1TestCase(MultichannelConvolutionNodeCommonTests, unittest.TestCase):
+class MultichannelConvolutionNodeV1V1TestCase(MultichannelConvolutionNodeCommonTests, unittest.TestCase):
     @override
     def get_multichannel_convolution_version(self):
         return 1
+    @override
+    def get_tranposed_multichannel_convolution_version(self):
+        return 1
     
-class MultichannelConvolutionNodeV2TestCase(MultichannelConvolutionNodeCommonTests, unittest.TestCase):
+class MultichannelConvolutionNodeV2V1TestCase(MultichannelConvolutionNodeCommonTests, unittest.TestCase):
     @override
     def get_multichannel_convolution_version(self):
+        return 2
+    @override
+    def get_tranposed_multichannel_convolution_version(self):
+        return 1
+
+class MultichannelConvolutionNodeV1V2TestCase(MultichannelConvolutionNodeCommonTests, unittest.TestCase):
+    @override
+    def get_multichannel_convolution_version(self):
+        return 1
+    @override
+    def get_tranposed_multichannel_convolution_version(self):
+        return 2
+    
+class MultichannelConvolutionNodeV2V2TestCase(MultichannelConvolutionNodeCommonTests, unittest.TestCase):
+    @override
+    def get_multichannel_convolution_version(self):
+        return 2
+    @override
+    def get_tranposed_multichannel_convolution_version(self):
         return 2

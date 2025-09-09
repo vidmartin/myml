@@ -437,9 +437,7 @@ def multichannel_transposed_convolution_v2(array: np.ndarray, kernel: np.ndarray
     )
     view = np.moveaxis(view, -(2 * len(kernel_shape)) - 1, -len(kernel_shape) - 1)
     multi_kernel_t = multi_kernel.transpose((0,) + tuple(range(2, len(multi_kernel.shape))) + (1,))
-    print(f"{view.shape} * {multi_kernel_t.shape}")
     res: np.ndarray = np.tensordot(view, multi_kernel_t, len(kernel_shape) + 1)
-    print(res.shape)
     res = res.transpose(
         tuple(range(non_spatial_dims)) + (len(res.shape) - 1,) + tuple(
             non_spatial_dims + meta_i + d * len(kernel_shape)
@@ -448,7 +446,6 @@ def multichannel_transposed_convolution_v2(array: np.ndarray, kernel: np.ndarray
         )
     ) # transpose so that spatial dimension index and corresponding "minikernel index" are next to each other
     # so that reshape does the right thing
-    print(res.shape)
 
     res = res.reshape(
         array.shape[:non_spatial_dims] + (in_channels,) + tuple(
@@ -456,10 +453,15 @@ def multichannel_transposed_convolution_v2(array: np.ndarray, kernel: np.ndarray
             for meta_i in range(len(kernel_shape))
         )
     )
-    print(res.shape)
 
     indexer = tuple(slice(0, out_shape[meta_i]) for meta_i in range(len(array.shape)))
     return res[indexer]
+
+MULTICHANNEL_TRANSPOSED_CONVOLUTION_FUNCTIONS_BY_VERSION: Dict[int, Callable[[np.ndarray, np.ndarray, tuple[int, ...]], np.ndarray]] = {
+    1: multichannel_transposed_convolution,
+    2: multichannel_transposed_convolution_v2,
+}
+
 
 T = TypeVar("T")
 if False:

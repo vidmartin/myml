@@ -21,6 +21,7 @@ class MultichannelConvolutionNode(LazyDependentNode):
         padding: tuple[int, ...],
         stride: tuple[int, ...],
         multichannel_convolution_function_or_version: Callable[[np.ndarray, np.ndarray, tuple[int, ...]], np.ndarray] | int = 1,
+        multichannel_transposed_convolution_function_or_version: Callable[[np.ndarray, np.ndarray, tuple[int, ...]], np.ndarray] | int = 1
     ):
         super().__init__([input_node, kernels_node])
         self._input_node = input_node
@@ -35,7 +36,9 @@ class MultichannelConvolutionNode(LazyDependentNode):
         self._multichannel_convolution_function = \
             multichannel_convolution_function_or_version if not isinstance(multichannel_convolution_function_or_version, int) \
             else utils.MULTICHANNEL_CONVOLUTION_FUNCTIONS_BY_VERSION[multichannel_convolution_function_or_version]
-        
+        self._multichannel_transposed_convolution_functoion = \
+            multichannel_transposed_convolution_function_or_version if not isinstance(multichannel_transposed_convolution_function_or_version, int) \
+            else utils.MULTICHANNEL_TRANSPOSED_CONVOLUTION_FUNCTIONS_BY_VERSION[multichannel_transposed_convolution_function_or_version]
         self._time_forward: float | None = None
         self._time_backward_input: float | None = None
         self._time_backward_kernel: float | None = None
@@ -67,7 +70,6 @@ class MultichannelConvolutionNode(LazyDependentNode):
         self._depval_padded = utils.pad_lr(depval, self._padding, 0.0)
         self._padded_input_shape = self._depval_padded.shape
         kerval = self._kernels_node.get_value()
-        # return utils.convolution(self._depval_padded, kerval, self._stride)
         result = self._multichannel_convolution_function(self._depval_padded, kerval, self._stride)
 
         self._time_forward = time.time() - t0 # TODO: remove
@@ -81,7 +83,7 @@ class MultichannelConvolutionNode(LazyDependentNode):
         kerval = self._kernels_node.get_value()
 
         t0 = time.time() # TODO: remove
-        input_padded_grad_possibly_smaller = utils.multichannel_transposed_convolution(output_gradient, kerval, self._stride)
+        input_padded_grad_possibly_smaller = self._multichannel_transposed_convolution_functoion(output_gradient, kerval, self._stride)
         input_padded_grad = utils.pad_r(
             input_padded_grad_possibly_smaller,
             tuple(
