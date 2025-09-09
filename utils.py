@@ -228,6 +228,20 @@ def transposed_convolution_v3(array: np.ndarray, kernel: np.ndarray, stride: tup
     assert len(kernel.shape) == len(stride)
     non_spatial_dims = len(array.shape) - len(kernel.shape)
 
+    # if stride == (1,) * len(stride):
+    #     array_ = np.zeros(
+    #         array.shape[:non_spatial_dims] + tuple(
+    #             2 * (kernel.shape[meta_i] - 1) + array.shape[non_spatial_dims + meta_i]
+    #             for meta_i in range(len(kernel.shape))
+    #         )
+    #     )
+    #     indexer = (slice(0, None),) * non_spatial_dims + tuple(
+    #         slice(kernel.shape[meta_i] - 1, kernel.shape[meta_i] - 1 + array.shape[non_spatial_dims + meta_i])
+    #         for meta_i in range(len(kernel.shape))
+    #     )
+    #     array_[indexer] = array
+    #     return convolution_v2(array_, np.flip(kernel), stride)
+
     out_shape = array.shape[:non_spatial_dims] + tuple(
         kernel.shape[meta_i] + stride[meta_i] * (array.shape[non_spatial_dims + meta_i] - 1)
         for meta_i in range(len(kernel.shape))
@@ -369,6 +383,83 @@ def multichannel_transposed_convolution(array: np.ndarray, kernels: np.ndarray, 
         arr = np.moveaxis(arr, -1, non_spatial_dims)
         result[result_indexer] += arr
     return result
+
+def multichannel_transposed_convolution_v2(array: np.ndarray, kernel: np.ndarray, stride: tuple[int, ...]):
+    out_channels, in_channels, *kernel_shape = kernel.shape
+    kernel_shape = tuple(kernel_shape)
+    assert len(kernel_shape) == len(stride)
+    non_spatial_dims = len(array.shape) - len(kernel_shape) - 1
+
+    out_shape = array.shape[:non_spatial_dims] + (in_channels,) + tuple(
+        kernel_shape[meta_i] + stride[meta_i] * (array.shape[non_spatial_dims + meta_i + 1] - 1)
+        for meta_i in range(len(kernel_shape))
+    )
+
+    kernel_adjusted_shape = tuple(
+        (kernel_shape[meta_i] + stride[meta_i] - 1) // stride[meta_i] * stride[meta_i]
+        for meta_i in range(len(kernel_shape))
+    )
+    kernel_adjusted = np.zeros((out_channels, in_channels) + kernel_adjusted_shape)
+    indexer = (slice(0, None),) * 2 + tuple(
+        slice(0, kernel_shape[meta_i])
+        for meta_i in range(len(kernel_shape))
+    )
+    kernel_adjusted[indexer] = kernel
+
+    mini_kernel_shape = tuple(
+        kernel_adjusted_shape[meta_i] // stride[meta_i]
+        for meta_i in range(len(kernel_shape))
+    )
+    multi_kernel = np.zeros((out_channels, in_channels) + mini_kernel_shape + stride)
+    for idx in itertools.product(*[range(s) for s in stride]):
+        dest_indexer = (slice(0, None), slice(0, None)) + (slice(0, None),) * len(kernel_shape) + idx
+        src_indexer = (slice(0, None), slice(0, None)) + tuple(
+            slice(idx[meta_i], None, stride[meta_i])
+            for meta_i in range(len(kernel_shape))
+        )
+        multi_kernel[dest_indexer] = np.flip(kernel_adjusted[src_indexer], tuple(range(2, len(kernel.shape))))
+
+    array_ = np.zeros(
+        array.shape[:non_spatial_dims] + (out_channels,) + tuple(
+            2 * (mini_kernel_shape[meta_i] - 1) + array.shape[non_spatial_dims + meta_i + 1]
+            for meta_i in range(len(kernel_shape))
+        )
+    )
+    indexer = (slice(0, None),) * non_spatial_dims + (slice(0, None),) + tuple(
+        slice(mini_kernel_shape[meta_i] - 1, mini_kernel_shape[meta_i] - 1 + array.shape[non_spatial_dims + meta_i + 1])
+        for meta_i in range(len(kernel_shape))
+    )
+    array_[indexer] = array
+
+    view: np.ndarray = np.lib.stride_tricks.sliding_window_view(
+        array_, mini_kernel_shape,
+        tuple(non_spatial_dims + 1 + meta_i for meta_i in range(len(kernel_shape)))
+    )
+    view = np.moveaxis(view, -(2 * len(kernel_shape)) - 1, -len(kernel_shape) - 1)
+    multi_kernel_t = multi_kernel.transpose((0,) + tuple(range(2, len(multi_kernel.shape))) + (1,))
+    print(f"{view.shape} * {multi_kernel_t.shape}")
+    res: np.ndarray = np.tensordot(view, multi_kernel_t, len(kernel_shape) + 1)
+    print(res.shape)
+    res = res.transpose(
+        tuple(range(non_spatial_dims)) + (len(res.shape) - 1,) + tuple(
+            non_spatial_dims + meta_i + d * len(kernel_shape)
+            for meta_i in range(len(kernel_shape))
+            for d in (0, 1)
+        )
+    ) # transpose so that spatial dimension index and corresponding "minikernel index" are next to each other
+    # so that reshape does the right thing
+    print(res.shape)
+
+    res = res.reshape(
+        array.shape[:non_spatial_dims] + (in_channels,) + tuple(
+            stride[meta_i] * (array.shape[non_spatial_dims + 1 + meta_i] + mini_kernel_shape[meta_i] - 1)
+            for meta_i in range(len(kernel_shape))
+        )
+    )
+    print(res.shape)
+
+    indexer = tuple(slice(0, out_shape[meta_i]) for meta_i in range(len(array.shape)))
+    return res[indexer]
 
 T = TypeVar("T")
 if False:
