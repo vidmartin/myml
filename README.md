@@ -16,16 +16,16 @@ The features that are already implemented:
     - label smoothing
     - decoupled weight decay for Adam
     - dropout
+    - batch normalization
+- convolutions (although they're quite slow)
 
 ## TODO list
 
 The features currently not implemented that I intend to add:
 
-2. batch normalization
-3. convolutions
-4. recurrent neural networks, LSTM
-5. attention
-6. self-attention, transformers
+- recurrent neural networks, LSTM
+- attention
+- self-attention, transformers
 
 ## Requirements
 
