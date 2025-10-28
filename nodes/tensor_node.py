@@ -53,7 +53,7 @@ class TensorNode(ABC):
         if output_gradient is None:
             assert functools.reduce(lambda a, b: a * b, shape, 1) == 1, "`output_gradient` is optional only for nodes with scalar outputs"
             output_gradient = np.ones(shape, dtype=np.float32)
-        assert output_gradient.shape == self.get_shape(), "`output_gradient` must have the same shape as the output of the given node"
+        assert output_gradient.shape == shape, "`output_gradient` must have the same shape as the output of the given node"
         return self._get_input_gradients(output_gradient)
     @abstractmethod
     def _get_input_gradients(self, output_gradient: np.ndarray) -> list[np.ndarray]:
