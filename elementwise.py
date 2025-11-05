@@ -223,6 +223,19 @@ class ElementwiseReLU(ElementwiseUnary):
     @override
     def accept(self, visitor):
         return visitor.visit_relu(self)
+    
+@dataclasses.dataclass
+class ElementwiseTanH(ElementwiseUnary):
+    @override
+    def _evaluate_unary_function(self, input):
+        return np.tanh(input)
+    @override
+    def _evaluate_unary_derivative(self, input):
+        return 1 - np.tanh(input) ** 2
+    
+    @override
+    def accept(self, visitor):
+        raise NotImplementedError() # TODO
 
 @dataclasses.dataclass
 class ElementwiseCrossLog(ElementwiseFunction):
