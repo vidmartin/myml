@@ -10,6 +10,8 @@ TResult = TypeVar("TResult")
 
 INPUT_WEIGHT_PARAM_NAME = "input_weight"
 STATE_WEIGHT_PARAM_NAME = "state_weight"
+INPUT_BIAS_PARAM_NAME = "input_bias"
+STATE_BIAS_PARAM_NAME = "state_bias"
 
 class RNNModule(NeuralNetwork[nodes.TensorNode]):
     def __init__(
@@ -27,6 +29,8 @@ class RNNModule(NeuralNetwork[nodes.TensorNode]):
         return {
             INPUT_WEIGHT_PARAM_NAME: ParameterSpecification((self._input_dim, self._state_dim)),
             STATE_WEIGHT_PARAM_NAME: ParameterSpecification((self._state_dim, self._state_dim)),
+            INPUT_BIAS_PARAM_NAME: ParameterSpecification((self._state_dim,)),
+            STATE_BIAS_PARAM_NAME: ParameterSpecification((self._state_dim,)),
         }
     @override
     def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode) -> ComputationalGraph:
@@ -38,11 +42,19 @@ class RNNModule(NeuralNetwork[nodes.TensorNode]):
 
         input_weight_param = nodes.ConstantNode(params[INPUT_WEIGHT_PARAM_NAME])
         state_weight_param = nodes.ConstantNode(params[STATE_WEIGHT_PARAM_NAME])
+        input_bias_param = nodes.ConstantNode(params[INPUT_BIAS_PARAM_NAME])
+        state_bias_param = nodes.ConstantNode(params[STATE_BIAS_PARAM_NAME])
 
         for i in range(sequence_length):
             item_input = nodes.SliceNode(input, len(input_shape) - 2, i)
-            input_contrib = nodes.TensorDotNode(item_input, input_weight_param, 1)
-            state_contrib = nodes.TensorDotNode(states[-1], state_weight_param, 1)
+            input_contrib = nodes.ElementwiseNode(elementwise.ElementwiseAdd(2), [
+                nodes.TensorDotNode(item_input, input_weight_param, 1),
+                nodes.ExtendNode(input_bias_param, input_shape[:-2])
+            ])
+            state_contrib = nodes.ElementwiseNode(elementwise.ElementwiseAdd(2), [
+                nodes.TensorDotNode(states[-1], state_weight_param, 1),
+                nodes.ExtendNode(state_bias_param, input_shape[:-2])
+            ])
             item_result = nodes.ElementwiseNode(self._activation, [
                 nodes.ElementwiseNode(elementwise.ElementwiseAdd(2), [
                     input_contrib, state_contrib
@@ -55,6 +67,8 @@ class RNNModule(NeuralNetwork[nodes.TensorNode]):
             output_node, {
                 INPUT_WEIGHT_PARAM_NAME: input_weight_param,
                 STATE_WEIGHT_PARAM_NAME: state_weight_param,
+                INPUT_BIAS_PARAM_NAME: input_bias_param,
+                STATE_BIAS_PARAM_NAME: state_bias_param,
             }
         )
             
