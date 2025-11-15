@@ -26,7 +26,7 @@ class SelectLastStateModule(NeuralNetwork[nodes.TensorNode]):
         assert len(input_shape) == 3, f"only 3-dimensional arrays are supported by SelectLastStateModule"
 
         if self._sequence_length_metadata_key is not None:
-            output_node = nodes.SelectNode(input, 0, 1, metadata[self._sequence_length_metadata_key])
+            output_node = nodes.SelectNode(input, 0, 1, metadata[self._sequence_length_metadata_key] - 1)
             return ComputationalGraph(output_node, {})
         else:
             output_node = nodes.SliceNode(input, len(input_shape) - 2, input_shape[-2] - 1)
