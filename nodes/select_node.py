@@ -22,23 +22,28 @@ class SelectNode(LazyDependentNode):
     @override
     def get_shape(self):
         return self._shape
-    @override
-    def _get_value(self):
+    def _get_indexer(self):
         dep_sh = self._deps[0].get_shape()
-        indexer = tuple(
+        return tuple(
             np.arange(dep_sh[i]) if i == self._select_axis else (
                 self._indices if i == self._select_along_axis else slice(0, None)
             ) for i in range(len(dep_sh))
         )
+    @override
+    def _get_value(self):
+        indexer = self._get_indexer()
         dep_val = self._deps[0].get_value()
         return dep_val[indexer]
     @override
     def _get_input_gradients(self, output_gradient):
-        raise NotImplementedError()
+        grad = np.zeros(self._deps[0].get_shape())
+        indexer = self._get_indexer()
+        grad[indexer] = output_gradient
+        return [grad]
     @override
     def __repr__(self):
-        raise NotImplementedError()
+        return f"SliceNode({self._deps[0]}, {self._select_axis}, {self._select_along_axis}, {self._indices})"
     
     @override
     def accept(self, visitor: NodeVisitor[TResult]) -> TResult:
-        raise NotImplementedError()
+        return visitor.visit_select_node(self)

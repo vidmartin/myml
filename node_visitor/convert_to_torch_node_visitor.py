@@ -111,3 +111,7 @@ class ConvertToTorchNodeVisitor(NodeVisitor[torch.Tensor]):
     @utils.instance_memo
     def visit_batch_norm_node(self, node):
         raise NotImplementedError() # TODO
+    @override
+    @utils.instance_memo
+    def visit_select_node(self, node):
+        raise NotImplementedError() # TODO

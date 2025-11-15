@@ -60,3 +60,6 @@ class NodeVisitor(ABC, Generic[TReturn]):
     @abstractmethod
     def visit_batch_norm_node(self, node: nodes.BatchNormNode) -> TReturn:
         raise NotImplementedError()
+    @abstractmethod
+    def visit_select_node(self, node: nodes.SelectNode) -> TReturn:
+        raise NotImplementedError()

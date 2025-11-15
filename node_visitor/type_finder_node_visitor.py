@@ -79,3 +79,7 @@ class TypeFinderNodeVisitor(NodeVisitor[set[T]], Generic[T]):
     def visit_batch_norm_node(self, node: nodes.BatchNormNode) -> set[T]:
         temp = { node } if self._target_type is nodes.BatchNormNode else set()
         return temp | self._inspect_deps(node)
+    @override
+    def visit_select_node(self, node: nodes.SelectNode) -> set[T]:
+        temp = { node } if self._target_type is nodes.SelectNode else set()
+        return temp | self._inspect_deps(node)
