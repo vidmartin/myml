@@ -42,7 +42,7 @@ class MultichannelConvolutionModule(NeuralNetwork[nodes.TensorNode]):
             }
         return kernels_dict
     @override
-    def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode) -> ComputationalGraph:
+    def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode, metadata: dict[str, Any]) -> ComputationalGraph:
         input_shape = input.get_shape()
         channel_dim = len(input_shape) - len(self._kernel_size) - 1
         param_nodes = {

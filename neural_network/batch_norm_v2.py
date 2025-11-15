@@ -54,7 +54,13 @@ class BatchNormV2Module(NeuralNetwork[nodes.TensorNode]):
         self._mu_ma = (1 - self._rho) * self._mu_ma + self._rho * mu
         self._sigma_sq_ma = (1 - self._rho) * self._sigma_sq_ma + self._rho * sigsq
     @override
-    def _construct(self, input_node: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode) -> ComputationalGraph:
+    def _construct(
+        self,
+        input_node: nodes.TensorNode,
+        params: Dict[str, np.ndarray],
+        mode: EvaluationMode,
+        metadata: dict[str, Any]
+    ) -> ComputationalGraph:
         input_shape = input_node.get_shape()
         feature_dim_index, other_axes = self._get_feature_dim_index_and_other_axes(input_shape)
         input_val = input_node.get_value()

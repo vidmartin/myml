@@ -37,11 +37,23 @@ class NeuralNetwork(ABC, Generic[TInput]):
                 for k in params if param_specs[k].shape != params[k].shape
             )
     @final
-    def construct(self, input: TInput, params: Dict[str, np.ndarray], mode: EvaluationMode = EvaluationMode.INFERENCE) -> ComputationalGraph:
+    def construct(
+        self,
+        input: TInput,
+        params: Dict[str, np.ndarray],
+        mode: EvaluationMode = EvaluationMode.INFERENCE,
+        metadata: dict[str, Any] = {},
+    ) -> ComputationalGraph:
         self.assert_params_valid(params)
-        return self._construct(input, params, mode)
+        return self._construct(input, params, mode, metadata)
     @abstractmethod
-    def _construct(self, input: TInput, params: Dict[str, np.ndarray], mode: EvaluationMode) -> ComputationalGraph:
+    def _construct(
+        self,
+        input: TInput,
+        params: Dict[str, np.ndarray],
+        mode: EvaluationMode,
+        metadata: dict[str, Any] = {},
+    ) -> ComputationalGraph:
         raise NotImplementedError()
     @abstractmethod
     def accept(self, visitor: NeuralNetworkVisitor[TResult]) -> TResult:

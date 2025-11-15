@@ -12,7 +12,7 @@ class FlattenModule(NeuralNetwork[nodes.TensorNode]):
     def get_params(self):
         return {}
     @override
-    def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode) -> ComputationalGraph:
+    def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode, metadata: dict[str, Any]) -> ComputationalGraph:
         shape = input.get_shape()
         return ComputationalGraph(
             output_node=nodes.ReshapeNode(input, (shape[0], -1)),

@@ -14,9 +14,9 @@ class InputNumpyModule(NeuralNetwork[np.ndarray]):
     def get_params(self):
         return self._wrapped.get_params()
     @override
-    def _construct(self, input: np.ndarray, params: Dict[str, np.ndarray], mode: EvaluationMode) -> ComputationalGraph:
+    def _construct(self, input: np.ndarray, params: Dict[str, np.ndarray], mode: EvaluationMode, metadata: dict[str, Any]) -> ComputationalGraph:
         input_node = nodes.ConstantNode(input)
-        return self._wrapped.construct(input_node, params, mode)
+        return self._wrapped.construct(input_node, params, mode, metadata)
     @override
     def accept(self, visitor: NeuralNetworkVisitor[TResult]) -> TResult:
         return visitor.visit_input_numpy(self)

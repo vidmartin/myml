@@ -44,7 +44,7 @@ class RNNModule(NeuralNetwork[nodes.TensorNode]):
         state_shape = input_shape[:-2] + (self._state_dim,)
         return nodes.ConstantNode(np.zeros(state_shape)), {}
     @override
-    def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode) -> ComputationalGraph:
+    def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode, metadata: dict[str, Any]) -> ComputationalGraph:
         input_shape = input.get_shape()
         sequence_length = input_shape[-2] # input shape: (..., sequence length, sequence item vector)
 

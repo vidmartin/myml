@@ -13,7 +13,7 @@ class SelectLastStateModule(NeuralNetwork[nodes.TensorNode]):
     def get_params(self):
         return {}
     @override
-    def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode) -> ComputationalGraph:
+    def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode, metadata: dict[str, Any]) -> ComputationalGraph:
         input_shape = input.get_shape()
         output_node = nodes.SliceNode(input, len(input_shape) - 2, input_shape[-2] - 1)
         # TODO: a way to select different item for each datapoint

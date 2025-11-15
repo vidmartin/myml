@@ -18,7 +18,7 @@ class SequentialModule(NeuralNetwork[nodes.TensorNode]):
             for name, param in child.get_params().items()
         }
     @override
-    def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode) -> ComputationalGraph:
+    def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode, metadata: dict[str, Any]) -> ComputationalGraph:
         output_node = input
         param_nodes: dict[str, nodes.ConstantNode] = {}
         for i, child in enumerate(self._children):
@@ -28,7 +28,7 @@ class SequentialModule(NeuralNetwork[nodes.TensorNode]):
                 for name, param in params.items()
                 if name.startswith(param_prefix)
             }
-            child_graph = child.construct(output_node, relevant_params, mode)
+            child_graph = child.construct(output_node, relevant_params, mode, metadata)
             param_nodes = param_nodes | {
                 f"{param_prefix}{name}": param_node
                 for name, param_node in child_graph.param_nodes.items()

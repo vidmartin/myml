@@ -50,7 +50,7 @@ class BatchNormModule(NeuralNetwork[nodes.TensorNode]):
         sigma_sq_unbiased = proto_sigma_sq.sum(other_axes) / sigma_sq_divisor
         self._sigma_sq_ma = (1 - self._rho) * self._sigma_sq_ma + self._rho * sigma_sq_unbiased
     @override
-    def _construct(self, input_node: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode) -> ComputationalGraph:
+    def _construct(self, input_node: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode, metadata: dict[str, Any]) -> ComputationalGraph:
         input_shape = input_node.get_shape()
         feature_dim_index, other_axes = self._get_feature_dim_index_and_other_axes(input_shape)
         if mode == EvaluationMode.INFERENCE:

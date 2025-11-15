@@ -15,7 +15,7 @@ class ElementwiseModule(NeuralNetwork[nodes.TensorNode]):
     def get_params(self):
         return {}
     @override
-    def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode) -> ComputationalGraph:
+    def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode, metadata: dict[str, Any]) -> ComputationalGraph:
         return ComputationalGraph(
             output_node=nodes.ElementwiseNode(self._function, [input]),
             param_nodes={},

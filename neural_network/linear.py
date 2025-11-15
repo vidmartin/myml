@@ -22,7 +22,7 @@ class LinearModule(NeuralNetwork[nodes.TensorNode]):
             BIAS_PARAM_NAME: ParameterSpecification((self._out_features,)),
         }
     @override
-    def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode) -> ComputationalGraph:
+    def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode, metadata: dict[str, Any]) -> ComputationalGraph:
         shape = input.get_shape()
         weight_node = nodes.ConstantNode(params[WEIGHT_PARAM_NAME])
         bias_node = nodes.ConstantNode(params[BIAS_PARAM_NAME])
