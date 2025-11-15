@@ -12,6 +12,7 @@ INPUT_WEIGHT_PARAM_NAME = "input_weight"
 STATE_WEIGHT_PARAM_NAME = "state_weight"
 INPUT_BIAS_PARAM_NAME = "input_bias"
 STATE_BIAS_PARAM_NAME = "state_bias"
+INITIAL_STATE_PARAM_NAME = "initial_state"
 
 class RNNModule(NeuralNetwork[nodes.TensorNode]):
     def __init__(
@@ -19,11 +20,12 @@ class RNNModule(NeuralNetwork[nodes.TensorNode]):
         activation: elementwise.ElementwiseUnary,
         input_dim: int,
         state_dim: int,
+        parametrize_initial_state: bool = False,
     ):
         self._activation = activation
         self._input_dim = input_dim
         self._state_dim = state_dim
-        # TODO: different ways to produce initial state
+        self._parametrize_initial_state = parametrize_initial_state
     @override
     def get_params(self):
         return {
@@ -31,14 +33,23 @@ class RNNModule(NeuralNetwork[nodes.TensorNode]):
             STATE_WEIGHT_PARAM_NAME: ParameterSpecification((self._state_dim, self._state_dim)),
             INPUT_BIAS_PARAM_NAME: ParameterSpecification((self._state_dim,)),
             STATE_BIAS_PARAM_NAME: ParameterSpecification((self._state_dim,)),
-        }
+        } | ({
+            INITIAL_STATE_PARAM_NAME: ParameterSpecification((self._state_dim,))
+        } if self._parametrize_initial_state else {})
+    def _get_initial_state(self, input: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode) -> tuple[nodes.TensorNode, dict[str, nodes.TensorNode]]:
+        input_shape = input.get_shape()
+        if self._parametrize_initial_state:
+            param = nodes.ConstantNode(params[INITIAL_STATE_PARAM_NAME])
+            return nodes.ExtendNode(param, input_shape[:-2]), { INITIAL_STATE_PARAM_NAME: param }
+        state_shape = input_shape[:-2] + (self._state_dim,)
+        return nodes.ConstantNode(np.zeros(state_shape)), {}
     @override
     def _construct(self, input: nodes.TensorNode, params: Dict[str, np.ndarray], mode: EvaluationMode) -> ComputationalGraph:
         input_shape = input.get_shape()
         sequence_length = input_shape[-2] # input shape: (..., sequence length, sequence item vector)
 
-        state_shape = input_shape[:-2] + (self._state_dim,)
-        states: list[nodes.TensorNode] = [nodes.ConstantNode(np.zeros(state_shape))]
+        initial_state, initial_state_param_dict = self._get_initial_state(input, params, mode)
+        states: list[nodes.TensorNode] = [initial_state]
 
         input_weight_param = nodes.ConstantNode(params[INPUT_WEIGHT_PARAM_NAME])
         state_weight_param = nodes.ConstantNode(params[STATE_WEIGHT_PARAM_NAME])
@@ -69,7 +80,7 @@ class RNNModule(NeuralNetwork[nodes.TensorNode]):
                 STATE_WEIGHT_PARAM_NAME: state_weight_param,
                 INPUT_BIAS_PARAM_NAME: input_bias_param,
                 STATE_BIAS_PARAM_NAME: state_bias_param,
-            }
+            } | initial_state_param_dict
         )
             
     @override
