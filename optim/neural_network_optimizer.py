@@ -36,7 +36,7 @@ class NeuralNetworkOptimizer(ABC, Generic[TInput]):
     def get_param_values(self) -> Dict[str, np.ndarray]:
         return self._param_values
     
-    def step(self, input: TInput, target: np.ndarray) -> OptimizationStepRelevantInfo:
+    def step(self, input: TInput, target: np.ndarray, metadata: dict[str, Any] = {}) -> OptimizationStepRelevantInfo:
         """
         Computes the loss and its gradients with respect to parameters and
         then perfoms the training step i.e. updates the parameters accordingly.
@@ -44,16 +44,16 @@ class NeuralNetworkOptimizer(ABC, Generic[TInput]):
         Internally just calls `prepare_step` and then passes the returned object
         to `perform_step`. The same object is then returned from this method.
         """
-        relevant_info = self.prepare_step(input, target)
+        relevant_info = self.prepare_step(input, target, metadata)
         self.perform_step(relevant_info)
         return relevant_info
-    def prepare_step(self, input: TInput, target: np.ndarray) -> OptimizationStepRelevantInfo:
+    def prepare_step(self, input: TInput, target: np.ndarray, metadata: dict[str, Any] = {}) -> OptimizationStepRelevantInfo:
         """
         Computes the loss and its gradients with respect to parameters and
         returns an object, that can be passed to the `perform_step` method
         to perform the training step i.e. update the parameters accordingly.
         """
-        graph = self._neural_network.construct(input, self._param_values, EvaluationMode.TRAINING)
+        graph = self._neural_network.construct(input, self._param_values, EvaluationMode.TRAINING, metadata)
         loss_node = self._loss_function.construct(graph, target, EvaluationMode.TRAINING)
         grads_list = loss_node.get_gradients_against(
             [graph.param_nodes[key] for key in self._param_ordering]
