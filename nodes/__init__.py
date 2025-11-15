@@ -19,3 +19,4 @@ from nodes.slice_node import SliceNode
 from nodes.stack_node import StackNode
 from nodes.multichannel_convolution_node import MultichannelConvolutionNode
 from nodes.batch_norm_node import BatchNormNode
+from nodes.select_node import SelectNode

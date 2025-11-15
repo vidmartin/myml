@@ -20,7 +20,7 @@ class SliceNodeTestCase(unittest.TestCase):
 
         A_node = nodes.ConstantNode(A)
         res_node = nodes.SliceNode(A_node, 2, slice_index)
-        A_grad = res_node.get_gradients_against([A_node], output_grad)
+        A_grad, = res_node.get_gradients_against([A_node], output_grad)
 
         self.assertTrue(np.allclose(res_torch.detach().numpy(), res_node.get_value()))
         self.assertTrue(np.allclose(A_torch.grad.detach().numpy(), A_grad))
