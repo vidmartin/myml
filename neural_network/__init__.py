@@ -10,3 +10,5 @@ from neural_network.multichannel_convolution import MultichannelConvolutionModul
 from neural_network.multichannel_convolution_v2 import MultichannelConvolutionV2Module
 from neural_network.batch_norm import BatchNormModule
 from neural_network.batch_norm_v2 import BatchNormV2Module
+from neural_network.rnn import RNNModule
+from neural_network.select_last_state import SelectLastStateModule
